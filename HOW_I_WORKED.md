@@ -83,26 +83,32 @@ The live results above came from controlled Gmail and Cal.com tests. Search Cons
 
 ## 8. What I would do next with more time
 
-### 1. Compare AI models, tools, and prompting strategies
+### 1. Improve company discovery and qualification
 
-I would test Gemini, Groq, and other models using the same research tasks and prospect conversations. I would experiment with different prompts and evaluate factual accuracy, qualification quality, response reliability, latency, and cost. This would help me determine which tools and models are most suitable for each part of the workflow.
+I would improve how the app finds and filters companies, collects evidence, and checks whether a company meets the target criteria. I would look for more reliable ways to verify annual revenue, employee count, US location, and recent business activity. I would measure how many companies reviewers confirm as genuine fits and keep unknowns visible so reviewers can see where more research is needed.
 
-### 2. Explore agentic frameworks
+### 2. Improve AI-generated emails and replies
 
-I would experiment with an agent-based research workflow that could plan its searches, identify missing information, retry failed steps, and explore alternative sources. I would compare its results against my existing pipeline to determine whether it improves company discovery and qualification without introducing unnecessary complexity or costs.
+I would make first emails more personal, natural, and consistent while checking that each factual claim comes from verified information. For replies, I would test whether the AI understands what the prospect is asking, responds appropriately to questions and objections, and follows Ledgerwise’s business rules. I would work to reduce unnecessary handoffs while still escalating when information is missing or a response cannot be verified. Human approval would remain required before sending.
 
-### 3. Improve the platform and user experience
+### 3. Compare models and explore agentic research
 
-I would refine the interface to make it more polished, intuitive, and efficient for sales employees. I would also add analytics dashboards to monitor research performance, qualified companies, outreach progress, AI response quality, human interventions, and meeting bookings. I would improve contact discovery and email verification as well.
+I would compare Gemini, Groq, and other models on the same research tasks and prospect conversations. I would vary prompts and validation approaches and measure factual accuracy, qualification quality, response reliability, latency, and cost. I would also test an agentic research workflow that can plan searches, identify missing evidence, retry failed steps, and consult alternative sources. I would compare it with the current pipeline before deciding whether the gains justify the cost and complexity.
 
-### 4. Complete limitations and improve reliability
+### 4. Improve contact discovery and the reviewer experience
 
-I would implement permanent opt-out suppression before enabling real-prospect outreach, improve company qualification to reach the 30 confirmed matches, strengthen security and monitoring, and conduct more extensive real-world and concurrency testing. I would use the results and user feedback to prioritize further improvements.
+I would make business contact searches more reliable, especially when looking for finance decision-makers, and improve email verification. I would refine the dashboard and employee workflows based on reviewer feedback. I would also add analytics for research performance, confirmed fits, outreach progress, reply quality, human handoffs, and bookings.
 
-My overall goal would be to evolve Ledgerwise from a supervised prototype into a more reliable, measurable, and production-ready AI SDR platform.
+### 5. Complete the safety and reliability work
+
+Before any real-prospect outreach, I would finish permanent opt-out suppression, strengthen security and monitoring, and run more real-world and concurrency tests. I would use those results and reviewer feedback to prioritize further improvements.
+
+My goal would be to make Ledgerwise more reliable and measurable. These are next steps for the prototype.
 
 ## 9. Where the project stands
 
-I committed and pushed the Ledgerwise application to GitHub and deployed it to Render. I completed the public branding pages and Search Console verification, moved Google OAuth publishing to Production, and verified the new refresh token locally. The latest reported local suite passed 100 automated tests. My remaining demo tasks are to test the complete hosted workflow, verify that evaluators can sign in, and record the Loom walkthrough. Two-week availability is still to be confirmed. The 30-fit target and permanent opt-out suppression remain unfinished, and the project stays in test mode.
+I deployed Ledgerwise to Render, and the repository and documentation are available on GitHub. I completed the public branding pages and Search Console verification, moved Google OAuth publishing to Production, and verified the new refresh token locally. The latest reported local suite passed 100 automated tests. I recorded and uploaded the final Loom demonstration. Full hosted end-to-end verification and two-week availability remain unconfirmed.
+
+Ledgerwise remains a supervised, test-only demonstration. Company discovery still fell short of 30 confirmed fits, AI-generated replies still need careful review, and permanent opt-out suppression is unfinished.
 
 Working with AI sped up implementation and gave me more ways to investigate a problem. My most useful checks were the ones I could explain myself: reading a source to see what it proved, replaying the same saved message after a fix, and verifying what actually landed in Gmail or Cal.com. Those checks helped me decide when a model was useful, when a fixed policy was simpler, and when a late change was too risky for the demo.
