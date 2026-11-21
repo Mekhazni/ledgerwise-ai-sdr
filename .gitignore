@@ -11,3 +11,5 @@ venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+notes.md
+Ledgerwise_DATABASE_REPORT.md
