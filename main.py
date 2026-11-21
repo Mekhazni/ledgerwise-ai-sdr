@@ -103,6 +103,24 @@ def home():
     return RedirectResponse("/dashboard/overview", status_code=303)
 
 
+@app.get("/about")
+def about_page(request: Request):
+    verification = os.getenv("GOOGLE_SITE_VERIFICATION", "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", verification):
+        verification = ""
+    return render(request, "public_branding.html", page="About", verification=verification)
+
+
+@app.get("/privacy")
+def privacy_page(request: Request):
+    return render(request, "public_branding.html", page="Privacy Policy")
+
+
+@app.get("/terms")
+def terms_page(request: Request):
+    return render(request, "public_branding.html", page="Terms of Service")
+
+
 @app.get("/login")
 def login_page(request: Request, password_saved: bool = False):
     return render(request, "login.html", password_saved=password_saved)

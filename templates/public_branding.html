@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page }} | Ledgerwise AI SDR</title>
+  {% if verification %}<meta name="google-site-verification" content="{{ verification }}">{% endif %}
+  <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body class="login-page">
+  <main class="card" style="width: min(100%, 44rem)">
+    <p class="brand">Ledgerwise AI SDR</p>
+    <h1>{{ page }}</h1>
+    {% if page == "About" %}
+    <p>Ledgerwise AI SDR is a demonstration application for AI-assisted sales outreach. It helps reviewers research companies, draft outreach and replies, and arrange calls in a controlled test workflow.</p>
+    <p>Ledgerwise uses Gmail to send emails only after a reviewer approves the exact draft version. It reads replies from known Gmail conversations when a reviewer chooses Sync inbox. Outbound Gmail messages go only to the configured test inbox.</p>
+    {% elif page == "Privacy Policy" %}
+    <h2>Gmail permissions and use</h2>
+    <p>Ledgerwise requests Gmail send access (<code>gmail.send</code>) and read-only access (<code>gmail.readonly</code>) for the connected test sender. The send permission lets Ledgerwise send approved emails to the configured test inbox. The read-only permission can read mailbox contents. Ledgerwise uses it during manual sync to fetch known conversation threads and import matching replies for the test workflow.</p>
+    <h2>Processing, storage, and review</h2>
+    <p>Ledgerwise stores conversation records in Supabase, including message subjects and bodies, message and thread identifiers, and sender and recipient information. Authorized reviewers can view conversations and draft history. When AI assistance is used, Ledgerwise can send reply text, relevant conversation history, and company research to Google Gemini to prepare and check drafts. A reviewer must approve the exact outgoing version before Ledgerwise sends it.</p>
+    <h2>Access and protection</h2>
+    <p>The public pages introduce the demo. Viewing conversation records requires an authorized dashboard account. Ledgerwise uses Supabase Auth to sign reviewers in and checks access on the server. Google OAuth credentials stay on the server, and browser sessions on the HTTPS deployment use secure, HTTP-only cookies.</p>
+    <p>The connected mailbox is used for controlled tests. Ledgerwise sends only to the configured test inbox. When booking is enabled and a test meeting is confirmed, Ledgerwise shares the selected time and test attendee details with Cal.com to create the booking.</p>
+    {% else %}
+    <p>Ledgerwise AI SDR is a case-study demonstration for evaluation purposes. Public information pages are available to visitors. Only reviewers with dashboard access granted by an administrator may use the dashboard, and they must use controlled test accounts.</p>
+    <p>Reviewers are responsible for checking drafts before approving them. Use the demonstration only with test conversations and accounts you are authorized to use.</p>
+    {% endif %}
+    <nav aria-label="Public pages">
+      <a href="/about">About</a> | <a href="/privacy">Privacy Policy</a> |
+      <a href="/terms">Terms of Service</a> | <a href="/login">Reviewer sign-in</a>
+    </nav>
+  </main>
+</body>
+</html>
