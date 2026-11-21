@@ -7,7 +7,7 @@ I built a supervised outreach tool for Ledgerwise, a fictional US bookkeeping fi
 | Step | What I used and why |
 |---|---|
 | Research | I used Tavily to find pages, HTTPX to fetch them, and Beautiful Soup to read their text. Tavily Extract helped when ordinary fetching failed. Gemini 3.1 Flash-Lite extracted structured findings, and Python checked whether each quote actually appeared in the source. I added Groq GPT-OSS 120B as an optional research fallback for Gemini service errors or read timeouts. |
-| Qualification and contacts | I used Python to score the saved evidence and kept the AI score separate from my fit decision. I dropped in-house email extraction after Hello Cake's examples were saved as contacts. I considered Hunter and explored Apollo for discovery. I kept Tavily for research and used Tomba for manual contact lookup after review. I chose the primary contact myself. A sourced address is different from a delivery-verified address. |
+| Qualification and contacts | Gemini extracted structured findings, Python applied the scoring rules to the saved evidence, and human reviewers made the final fit decisions. I dropped in-house email extraction after Hello Cake's examples were saved as contacts. I considered Hunter and explored Apollo for discovery. I kept Tavily for research and used Tomba for manual contact lookup after review. I chose the primary contact myself. A sourced address is different from a delivery-verified address. |
 | Email writing and replies | Gemini wrote personalized first emails and ordinary replies. The app checked prospect claims against saved evidence and Ledgerwise claims against approved facts. Gmail API and OAuth let me send approved drafts, import replies manually, and keep each conversation in its own Gmail thread. I replaced Gemini's standalone pricing answer with approved wording after live verification repeatedly contradicted itself. |
 | Booking | I chose Cal.com for real availability and booking, with Google Calendar connected and Cal Video for the call. I moved away from direct Google Calendar integration because a test-mode OAuth credential could expire during the required two-week demo period. |
 | Platform and hosting | I used FastAPI, Supabase Postgres and Auth, and plain HTML, CSS, and JavaScript. This kept the app within a stack I could explain. I chose Render’s free web service for the hosted demonstration and kept the existing Supabase project. |
@@ -15,7 +15,7 @@ I built a supervised outreach tool for Ledgerwise, a fictional US bookkeeping fi
 
 ## 2. My plan and how it changed
 
-I started with a three-company research script and a JSON file so I could inspect the sources before connecting a database. I looked for US e-commerce product companies in the target revenue and headcount ranges, with active hiring or recent funding or expansion as reasons to reach out. Gemini extracted findings into structured JSON. I used Python to check the quotes and score the evidence. Later I added dashboard batches of up to ten, with automatic discovery or manually supplied domains. Revenue and headcount often remained unknown, so I kept incomplete product businesses visible for later review and separated human fit decisions from AI scores. Demo fit let me test outreach without counting those companies toward the target.
+I started with a three-company research script and a JSON file so I could inspect the sources before connecting a database. I looked for US e-commerce product companies in the target revenue and headcount ranges, with active hiring or recent funding or expansion as reasons to reach out. Gemini extracted findings into structured JSON. I used Python to check the quotes and apply the scoring rules. Later I added dashboard batches of up to ten, with automatic discovery or manually supplied domains. Revenue and headcount often remained unknown, so I kept incomplete product businesses visible for later review and kept the Python-generated scores separate from the final decisions made by reviewers. Demo fit let me test outreach without counting those companies toward the target.
 
 Direct fetches sometimes returned HTTP 403 even for pages I could open in a browser. I confirmed that Tavily Basic Extract could read the Lulus homepage and added it as a bounded fallback. Gemini outages and timeouts also interrupted batches, so I added a limited Groq fallback for research. I compared models using the same saved excerpts without new Tavily calls. Some results were outside the target, including companies that were too large or sold software to e-commerce brands. Public revenue and headcount gaps and the time needed for human verification kept me below 30 confirmed fits.
 
@@ -43,9 +43,9 @@ I defined the requirements, proposed ideas, questioned technical choices, and te
 - Some initial drafts failed because natural line wrapping did not match the required email structure. I had Codex fix harmless whitespace before validation while preserving the words and claims. When a reply failed to appear in Conversations, we traced thread matching and reply handling instead of assuming Gmail had lost it. I kept exact-version approval even when a draft needed another attempt.
 - The Simple Sugars opt-out was flagged for human review without permanently suppressing the business contact. I postponed the proposed migration and changes to send authorization because they could disrupt tested workflows late in the project. That decision leaves a real safety gap. I kept the application test-only.
 
-### GitHub, Render, and Google OAuth
+## 5. GitHub, Render, and Google OAuth
 
-I prepared the GitHub repository in stages and connected its main branch to Render. I deployed Ledgerwise at https://ledgerwise-ai-sdr.onrender.com and configured the service’s environment variables for the existing Supabase project and integrations. I kept credentials out of Git and retained the reviewer sign-in and server-side dashboard checks. The code and branding changes were pushed to GitHub. The complete hosted workflow still needs a final pass.
+I prepared the GitHub repository in stages and connected its main branch to Render. I deployed Ledgerwise at [ledgerwise-ai-sdr.onrender.com](https://ledgerwise-ai-sdr.onrender.com/) and configured the service’s environment variables for the existing Supabase project and integrations. I kept credentials out of Git and retained the reviewer sign-in and server-side dashboard checks. The code and branding changes were pushed to GitHub. The complete hosted workflow still needs a final pass.
 
 I chose Render Free to make Ledgerwise publicly accessible without paying for hosting during development and evaluation. On November 21, 2026, I checked the Render billing dashboard. It showed 1.37 / 750 free instance hours, 0 MB / 5 GB of bandwidth, 1 / 25 services, 1 / 500 pipeline minutes, and 0 / 2 custom domains. That was a snapshot of usage at the time. Supabase, Gmail, Gemini, Tavily, Tomba, and Cal.com have separate limits that the Render dashboard does not measure.
 
@@ -55,9 +55,9 @@ Gmail initially used Google OAuth in External / Testing mode. I learned that its
 
 The branding setup needed a public homepage and privacy policy. Codex added About, Privacy, and Terms pages, linked them from login, and kept the dashboard protected. Search Console was checking the root URL, but the verification tag only appeared on About. We added the tag to the signed-out login page reached from the root redirect. I verified ownership in Search Console, configured the branding URLs and authorized domain, and moved the Google OAuth publishing status to In Production. Publishing status is separate from Google’s scope review.
 
-I reauthorized the dedicated Gmail account in OAuth Playground using my own OAuth client and requested both Gmail scopes. Codex tested the new refresh token locally without sending email or syncing the inbox. Refresh succeeded, the Gmail profile returned HTTP 200, the mailbox matched the configured sender, and both gmail.readonly and gmail.send were granted. Newly issued Production tokens are outside the Testing-mode seven-day rule, but can still become invalid. The local check did not prove that the running Render instance loaded or could use that token.
+I reauthorized the dedicated Gmail account in OAuth Playground using my own OAuth client and requested both Gmail scopes. Codex tested the new refresh token locally without sending email or syncing the inbox. Refresh succeeded, the Gmail profile returned HTTP 200, the mailbox matched the configured sender, and both `gmail.readonly` and `gmail.send` were granted. Newly issued Production tokens are outside the Testing-mode seven-day rule, but can still become invalid. The local check did not prove that the running Render instance loaded or could use that token.
 
-## 5. How I checked the agent
+## 6. How I checked the agent
 
 | Live scenario | Result |
 |---|---|
@@ -73,27 +73,35 @@ I reauthorized the dedicated Gmail account in OAuth Playground using my own OAut
 
 The live results above came from controlled Gmail and Cal.com tests. Search Console ownership verification and the local Production-token diagnostic were separate live checks. Full hosted testing remains pending.
 
-## 6. What it costs to run
+## 7. What it costs to run
 
-- **Actual spend.** I developed within free-tier constraints. The records do not establish a billing total. **TODO:** Reconcile provider billing and usage before reporting a figure.
-- **Free-tier usage.** I used Tavily, Gemini, and Tomba for research or contacts and tested Groq. Supabase, Gmail, and Cal.com supported the controlled prototype. **TODO:** Verify usage and plan allowances for every service, including the chosen host.
-- **Provider quotas recorded during testing.** Gemini allowed 15 requests per minute, 250,000 tokens per minute, and 500 requests per day. My Groq account showed 30 requests per minute, 1,000 requests per day, 8,000 tokens per minute, and 200,000 tokens per day. These are historical figures from development. **TODO:** Recheck current quotas before relying on them for a larger workload.
+- **Actual spend.** I developed within free-tier constraints. I checked Render usage as described above. I did not reconcile bills across all providers, so I cannot report a total.
+- **Free-tier usage.** I used Tavily, Gemini, and Tomba for research or contacts and tested Groq. Supabase, Gmail, and Cal.com supported the controlled prototype. I did not measure total usage across those services.
+- **Provider quotas recorded during testing.** Gemini allowed 15 requests per minute, 250,000 tokens per minute, and 500 requests per day. My Groq account showed 30 requests per minute, 1,000 requests per day, 8,000 tokens per minute, and 200,000 tokens per day. These are historical figures from development. I would recheck current allowances before sizing a larger workload.
 - **Application limits.** I capped each research batch at 40 Tavily searches, 60 distinct URLs, and 20 model attempts across both model providers. Tomba has a separate app cap of 23 manual lookups, based on my remaining credits. These caps are separate from provider quotas and measured usage.
-- **Future operating costs.** I do not have enough data for a monthly estimate. **TODO:** Measure searches and model calls per confirmed fit, lookups per usable contact, and reply volume. Use those figures and the expected hosting and database usage to estimate the monthly cost.
+- **Future operating costs.** I did not measure enough usage to estimate a monthly cost. I would track searches and model calls per confirmed fit, lookups per usable contact, and reply volume, then combine those figures with projected hosting and database usage.
 
-## 7. What I would do next with more time
+## 8. What I would do next with more time
 
-**1. Compare AI models, tools, and prompting strategies.** I would test Gemini, Groq, and other models using the same research tasks and prospect conversations. I would experiment with different prompts and evaluate factual accuracy, qualification quality, response reliability, latency, and cost. This would help me determine which tools and models are most suitable for each part of the workflow.
+### 1. Compare AI models, tools, and prompting strategies
 
-**2. Explore agentic frameworks.** I would experiment with an agent-based research workflow that could plan its searches, identify missing information, retry failed steps, and explore alternative sources. I would compare its results against my existing pipeline to determine whether it improves company discovery and qualification without introducing unnecessary complexity or costs.
+I would test Gemini, Groq, and other models using the same research tasks and prospect conversations. I would experiment with different prompts and evaluate factual accuracy, qualification quality, response reliability, latency, and cost. This would help me determine which tools and models are most suitable for each part of the workflow.
 
-**3. Improve the platform and user experience.** I would refine the interface to make it more polished, intuitive, and efficient for sales employees. I would also add analytics dashboards to monitor research performance, qualified companies, outreach progress, AI response quality, human interventions, and meeting bookings. I would improve contact discovery and email verification as well.
+### 2. Explore agentic frameworks
 
-**4. Complete limitations and improve reliability.** I would implement permanent opt-out suppression before enabling real-prospect outreach, improve company qualification to reach the 30 confirmed matches, strengthen security and monitoring, and conduct more extensive real-world and concurrency testing. I would use the results and user feedback to prioritize further improvements.
+I would experiment with an agent-based research workflow that could plan its searches, identify missing information, retry failed steps, and explore alternative sources. I would compare its results against my existing pipeline to determine whether it improves company discovery and qualification without introducing unnecessary complexity or costs.
+
+### 3. Improve the platform and user experience
+
+I would refine the interface to make it more polished, intuitive, and efficient for sales employees. I would also add analytics dashboards to monitor research performance, qualified companies, outreach progress, AI response quality, human interventions, and meeting bookings. I would improve contact discovery and email verification as well.
+
+### 4. Complete limitations and improve reliability
+
+I would implement permanent opt-out suppression before enabling real-prospect outreach, improve company qualification to reach the 30 confirmed matches, strengthen security and monitoring, and conduct more extensive real-world and concurrency testing. I would use the results and user feedback to prioritize further improvements.
 
 My overall goal would be to evolve Ledgerwise from a supervised prototype into a more reliable, measurable, and production-ready AI SDR platform.
 
-## 8. Where the project stands
+## 9. Where the project stands
 
 I committed and pushed the Ledgerwise application to GitHub and deployed it to Render. I completed the public branding pages and Search Console verification, moved Google OAuth publishing to Production, and verified the new refresh token locally. The latest reported local suite passed 100 automated tests. My remaining demo tasks are to test the complete hosted workflow, verify that evaluators can sign in, and record the Loom walkthrough. Two-week availability is still to be confirmed. The 30-fit target and permanent opt-out suppression remain unfinished, and the project stays in test mode.
 
