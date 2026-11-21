@@ -42,16 +42,21 @@ class PublicBrandingTests(unittest.TestCase):
                 if route == "/login":
                     self.assertIn("<footer>", response.text)
 
-    def test_search_console_tag_is_optional_and_about_only(self):
+    def test_search_console_tag_from_root_and_about(self):
         token = "example-public_tag"
         with patch.dict(os.environ, {"GOOGLE_SITE_VERIFICATION": token}):
             expected = f'<meta name="google-site-verification" content="{token}">'
             self.assertIn(expected, self.client.get("/about").text)
+            response = self.client.get("/", follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.url.path, "/login")
+            self.assertIn(expected, response.text.split("</head>", 1)[0])
             for route in ("/privacy", "/terms"):
                 self.assertNotIn(token, self.client.get(route).text)
         for value in ("", '<script>alert(1)</script>'):
             with patch.dict(os.environ, {"GOOGLE_SITE_VERIFICATION": value}):
-                self.assertNotIn("google-site-verification", self.client.get("/about").text)
+                for route in ("/about", "/"):
+                    self.assertNotIn("google-site-verification", self.client.get(route, follow_redirects=True).text)
 
     def test_dashboard_stays_protected(self):
         with patch.object(main, "supabase", new_callable=AsyncMock) as db:

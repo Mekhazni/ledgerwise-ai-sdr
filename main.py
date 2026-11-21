@@ -103,12 +103,14 @@ def home():
     return RedirectResponse("/dashboard/overview", status_code=303)
 
 
+def google_site_verification():
+    value = os.getenv("GOOGLE_SITE_VERIFICATION", "").strip()
+    return value if re.fullmatch(r"[A-Za-z0-9_-]+", value) else ""
+
+
 @app.get("/about")
 def about_page(request: Request):
-    verification = os.getenv("GOOGLE_SITE_VERIFICATION", "").strip()
-    if not re.fullmatch(r"[A-Za-z0-9_-]+", verification):
-        verification = ""
-    return render(request, "public_branding.html", page="About", verification=verification)
+    return render(request, "public_branding.html", page="About", verification=google_site_verification())
 
 
 @app.get("/privacy")
@@ -123,7 +125,7 @@ def terms_page(request: Request):
 
 @app.get("/login")
 def login_page(request: Request, password_saved: bool = False):
-    return render(request, "login.html", password_saved=password_saved)
+    return render(request, "login.html", password_saved=password_saved, verification=google_site_verification())
 
 
 @app.post("/login")
