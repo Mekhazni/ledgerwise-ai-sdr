@@ -1,0 +1,9 @@
+beautifulsoup4
+httpx
+python-dotenv
+fastapi
+jinja2
+python-multipart
+uvicorn
+tzdata
+phonenumbers

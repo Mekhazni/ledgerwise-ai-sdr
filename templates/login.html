@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in | Ledgerwise</title>
+  <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body class="login-page">
+  <main class="card login-card">
+    <p class="brand">Ledgerwise</p>
+    <h1>Reviewer sign-in</h1>
+    {% if password_saved %}<p role="status">Password saved. Sign in with your new password.</p>{% endif %}
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    <form action="/login" method="post">
+      <label>Email <input name="email" type="email" autocomplete="username" required></label>
+      <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Sign in</button>
+    </form>
+    <p>Forgot your password? Contact your Ledgerwise admin for a reset link.</p>
+  </main>
+</body>
+</html>

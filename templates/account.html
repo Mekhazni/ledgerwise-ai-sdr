@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | Ledgerwise</title>
+  <link rel="stylesheet" href="/static/dashboard.css" referrerpolicy="no-referrer">
+</head>
+<body class="login-page">
+  <main class="card login-card">
+    <p class="brand">Ledgerwise</p>
+    <h1>{{ title }}</h1>
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    {% if token_hash or signed_in %}
+    <form method="post" action="{{ '/account/password' if signed_in else '/account/accept' }}">
+      {% if signed_in %}
+      <label>Current password <input name="current_password" type="password" autocomplete="current-password" required></label>
+      {% else %}
+      <input name="token_hash" type="hidden" value="{{ token_hash }}">
+      <input name="kind" type="hidden" value="{{ kind }}">
+      {% endif %}
+      <label>New password <input name="password" type="password" autocomplete="new-password" minlength="12" required></label>
+      <label>Confirm new password <input name="confirmation" type="password" autocomplete="new-password" minlength="12" required></label>
+      <p>Use at least 12 characters.{% if not signed_in %} Contact your admin if the link expires before you finish.{% endif %}</p>
+      <button type="submit">Save password</button>
+    </form>
+    {% endif %}
+    <p><a href="{{ '/dashboard/settings' if signed_in else '/login' }}">{{ 'Back to Settings' if signed_in else 'Back to sign-in' }}</a></p>
+  </main>
+</body>
+</html>

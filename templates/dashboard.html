@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ sections[section] }} | Ledgerwise</title>
+  <link rel="stylesheet" href="/static/dashboard.css?v={{ dashboard_css_version }}">
+</head>
+<body class="workspace">
+  <aside class="sidebar">
+    <p class="brand">Ledgerwise</p>
+    <p>{{ account.full_name }} &middot; {{ account.role|capitalize }}</p>
+    <nav aria-label="Dashboard">
+      {% for key, title in sections.items() %}
+      <a href="/dashboard/{{ key }}" {% if key == section %}aria-current="page"{% endif %}>{{ title }}</a>
+      {% endfor %}
+    </nav>
+    <form action="/logout" method="post"><button type="submit">Sign out</button></form>
+  </aside>
+  <main>
+    {% if section != "meetings" %}<h1>{{ sections[section] }}</h1>{% endif %}
+    {% if section == "overview" %}
+    <div class="company-metrics">
+      <a class="card metric" href="/dashboard/companies"><strong>{{ companies|length }}</strong> Researched companies</a>
+      <a class="card metric" href="/dashboard/companies?human=pending"><strong>{{ counts.pending }}</strong> Awaiting validation</a>
+      <a class="card metric" href="/dashboard/companies?human=confirmed_fit"><strong>{{ counts.confirmed_fit }}</strong> Human-confirmed fits</a>
+      <a class="card metric" href="/dashboard/companies?human=needs_more_research"><strong>{{ counts.needs_more_research }}</strong> Needs more research</a>
+    </div>
+    {% elif section == "companies" and selected %}
+    <p><a href="/dashboard/companies">All companies</a></p>
+    <h2>{{ selected.name }}</h2>
+    {% for thread in selected.threads if thread.gmail_thread_id %}
+    <p><a href="/dashboard/conversations?thread_id={{ thread.id }}">Conversation</a> &middot;
+      {{ {"needs_human": "Human assistance needed", "human_took_over": "Human takeover", "ai_handles": "AI assistance"}[thread.status] }}
+      {% if thread.handoff_reason %}&middot; {{ thread.handoff_reason }}{% endif %}</p>
+    {% endfor %}
+    <div class="company-summary">
+      <section class="card table-wrap settings-card">
+        <table>
+          <caption>Company overview</caption>
+          <tbody>
+            <tr><th scope="row">Name</th><td>{{ selected.name }}</td></tr>
+            <tr><th scope="row">Website</th><td>{{ selected.website }}</td></tr>
+            {% for key, title in [('description', 'Description'), ('industry', 'Industry'), ('business_model', 'Business model'), ('products', 'Products')] %}
+            {% set value = summary.overview.get(key) %}
+            <tr><th scope="row">{{ title }}</th><td>
+              {% if value %}{{ value.value }} <a href="#overview-{{ key }}">Evidence</a>{% else %}Not captured{% endif %}
+            </td></tr>
+            {% endfor %}
+            <tr><th scope="row">Location</th><td>
+              {% for reason in summary.locations %}<p>{{ reason.finding }} <a href="#reason-{{ reason.id }}">Evidence</a></p>
+              {% else %}Not captured{% endfor %}
+            </td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="card table-wrap settings-card">
+        <table>
+          <caption>Business information</caption>
+          <tbody>
+            {% for key, title in [('revenue', 'Annual revenue'), ('headcount', 'Employee count')] %}
+            <tr><th scope="row">{{ title }}</th><td>
+              {% for item in summary.sizes.get(key, []) %}
+                <p>{{ item.finding }} &middot; {{ item.evidence_status|capitalize }}
+                {% if item.safe_url %}<a href="{{ item.safe_url }}" target="_blank" rel="noopener noreferrer">Source</a>{% endif %}</p>
+              {% else %}
+                {% if summary.legacy_size %}Not separately recorded. <a href="#reason-{{ summary.legacy_size[0].id }}">See saved size evidence</a>.{% else %}Not captured{% endif %}
+              {% endfor %}
+            </td></tr>
+            {% endfor %}
+            <tr><th scope="row">Business signals</th><td>
+              {% for reason in summary.timing %}<p>{{ reason.finding }} <a href="#reason-{{ reason.id }}">Evidence</a></p>
+              {% else %}No signals saved{% endfor %}
+            </td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="card table-wrap settings-card">
+        <table>
+          <caption>Contact information</caption>
+          {% if selected.company_contacts %}
+          <thead><tr><th scope="col">Email and type</th><th scope="col">Name and role</th><th scope="col">Publication and delivery</th><th scope="col">Sources</th></tr></thead>
+          <tbody>
+          {% for contact in selected.company_contacts %}
+            <tr>
+              <td><strong>{{ contact.email }}</strong><br>{{ contact_type_labels[contact.contact_type] }}</td>
+              <td>{{ contact.name or 'Not established' }}{% if contact.role %}<br>{{ contact.role }}{% endif %}</td>
+              <td>{{ "Tomba reported" if contact.publication_status == "provider_reported" else "Published" }}<br>Delivery {{ contact.delivery_status }}{% if contact.publication_status == "provider_reported" %} (provider status){% endif %}</td>
+              <td><a href="#published-contact-{{ contact.id }}">Sources and supporting evidence</a></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+          {% else %}
+          <tbody>
+            <tr><th scope="row">Name</th><td>{{ selected.contact_name or 'No named contact found' }}</td></tr>
+            <tr><th scope="row">Role</th><td>{{ selected.contact_role or 'Not captured' }}</td></tr>
+            <tr><th scope="row">Contact source</th><td>
+              {% if summary.contact_source %}<a href="#reason-{{ summary.contact_source.id }}">See the named contact evidence</a>{% else %}Not captured{% endif %}
+            </td></tr>
+            <tr><th scope="row">Business email</th><td>{{ selected.contact_email or 'None found' }}</td></tr>
+            <tr><th scope="row">Email status</th><td>
+              {% if selected.email_evidence %}{{ selected.email_evidence.finding }} &middot; Delivery unverified
+              {% elif selected.contact_email %}Publication and delivery unverified
+              {% elif selected.contact_name %}Named contact, no published email {{ 'found in this run' if 'public_contact_email' in selected.missing_information else 'saved' }}
+              {% else %}No contact found{% endif %}
+            </td></tr>
+            <tr><th scope="row">Email source</th><td>
+              {% if selected.email_evidence %}
+              <a href="{{ selected.email_evidence.safe_url }}" target="_blank" rel="noopener noreferrer">Open published source</a>
+              &middot; <a href="#reason-{{ selected.email_evidence.id }}">Exact quote</a>
+              {% else %}No published source saved{% endif %}
+            </td></tr>
+          </tbody>
+        {% endif %}
+        </table>
+      </section>
+      <section class="card table-wrap settings-card">
+        <table>
+          <caption>Scoring summary</caption>
+          <thead><tr><th scope="col">Criterion</th><th scope="col">Awarded points</th><th scope="col">Explanation</th></tr></thead>
+          <tbody>
+            {% for row in summary.score_rows %}
+            <tr><th scope="row">{{ row.label }}</th><td>{{ (row.points|string ~ '/' ~ row.maximum|string) if row.points is not none else 'Not captured' }}</td>
+              <td>{{ row.explanation }}{% if row.reasons %} <a href="#reason-{{ row.reasons[0].id }}">Evidence</a>{% endif %}</td></tr>
+            {% endfor %}
+            <tr><th scope="row">Total</th><td>{{ selected.score }}/100</td><td>{{ ai_labels[selected.ai_status] }}</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="card table-wrap settings-card">
+        <table>
+          <caption>Human validation</caption>
+          <tbody>
+            <tr><th scope="row">Latest decision</th><td>{{ review_labels[selected.human_status] }}</td></tr>
+            <tr><th scope="row">Reviewer</th><td>{{ selected.review.reviewer_name if selected.review else 'Not reviewed' }}</td></tr>
+            <tr><th scope="row">Date</th><td>
+              {% if selected.review %}<time datetime="{{ selected.review.reviewed_at }}">{{ selected.review.reviewed_at[:16]|replace("T", " ") }} UTC</time>{% else %}Not reviewed{% endif %}
+            </td></tr>
+            <tr><th scope="row">Note</th><td class="review-notes">{{ selected.review.notes if selected.review and selected.review.notes else 'None' }}</td></tr>
+          </tbody>
+        </table>
+        <a href="#human-review">Record a review</a>
+      </section>
+    </div>
+    <article class="card settings-card">
+      <h2>Detailed research</h2>
+      {% if selected.company_contacts %}
+      <h3>Published contact evidence</h3>
+      {% for contact in selected.company_contacts %}
+      <section class="evidence" id="published-contact-{{ contact.id }}">
+        <h4>{{ contact.email }}</h4>
+        {% for source in contact.sources %}
+        <p>{{ "Tomba reported source" if source.method == "tomba" else ("Public mailto link" if source.method == "mailto" else "Published page text") }}</p>
+        <blockquote>{{ source.evidence }}</blockquote>
+        {% if source.safe_url %}<a href="{{ source.safe_url }}" target="_blank" rel="noopener noreferrer">Open source</a>{% endif %}
+        {% endfor %}
+      </section>
+      {% endfor %}
+      {% endif %}
+
+      <p>Sales status: {{ selected.status|replace("_", " ")|capitalize }}</p>
+      {% if selected.qualification_status %}<p>Review the sources before using this result.</p>{% endif %}
+      {% if summary.overview %}
+      <h3>Company background evidence</h3>
+      {% for key, item in summary.overview.items() %}
+      <section class="evidence" id="overview-{{ key }}">
+        <p><strong>{{ key|replace("_", " ")|capitalize }}</strong> &middot; Quote matched</p>
+        <p>{{ item.value }}</p>
+        <blockquote>{{ item.quote }}</blockquote>
+        {% if item.safe_url %}<a href="{{ item.safe_url }}" target="_blank" rel="noopener noreferrer">Open source</a>{% endif %}
+      </section>
+      {% endfor %}
+      {% endif %}
+      {% if selected.missing_information %}
+      <h3>Missing or unconfirmed</h3>
+      <ul>{% for item in selected.missing_information %}<li>{{ missing_labels.get(item, item) }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if selected.research_errors %}
+      <details>
+        <summary>Research issues</summary>
+        <ul>{% for issue in selected.research_errors %}<li>{{ issue.detail }}</li>{% endfor %}</ul>
+      </details>
+      {% endif %}
+      <h3>Supporting evidence</h3>
+      {% for group in selected.reasons|groupby("criterion") %}
+      <h4>{{ group.grouper|replace("_", " ")|capitalize }}</h4>
+      {% for reason in group.list %}
+      <section class="evidence" id="reason-{{ reason.id }}">
+        <p><strong>{{ reason.criterion|replace("_", " ")|capitalize }}</strong> · {{ reason.evidence_status|capitalize }} · {{ reason.points }} points</p>
+        <p>{{ reason.finding }}</p>
+        {% if reason.quote %}<blockquote>{{ reason.quote }}</blockquote>{% endif %}
+        {% if reason.safe_url %}<a href="{{ reason.safe_url }}" target="_blank" rel="noopener noreferrer">Open source <span class="sr-only">(new tab)</span></a>{% endif %}
+      </section>
+      {% endfor %}
+      {% else %}<p>No supporting evidence stored yet.</p>{% endfor %}
+    </article>
+    <section class="card settings-card" id="human-review">
+      <h2>Human validation</h2>
+      <p>Confirm fit for normal outreach eligibility. Choose Demo fit to test the workflow with the configured test inbox. Each email requires approval.</p>
+      {% if review_error %}<p class="error" role="alert">{{ review_error }}</p>{% endif %}
+      {% if selected.review %}
+      <p>Latest review by {{ selected.review.reviewer_name }} on
+        <time datetime="{{ selected.review.reviewed_at }}">{{ selected.review.reviewed_at[:16]|replace("T", " ") }} UTC</time>.
+      </p>
+      {% endif %}
+      <form action="/companies/{{ selected.id }}/review" method="post">
+        <label>Decision
+          <select name="decision" required>
+            <option value="">Choose a decision</option>
+            {% for key, label in review_labels.items() if key != 'pending' %}
+              <option value="{{ key }}" {% if review_input and review_input.decision == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Note (optional)
+          <textarea name="notes" rows="3" maxlength="500">{{ review_input.notes if review_input else '' }}</textarea>
+        </label>
+        <button type="submit">Save review</button>
+      </form>
+    </section>
+    {% if selected.company_reviews %}
+    <section class="card settings-card">
+      <h2>Review history</h2>
+      {% for item in selected.company_reviews %}
+      <details class="evidence" {% if loop.first %}open{% endif %}>
+        <summary>{{ review_labels[item.decision] }} &middot; {{ item.reviewer_name }} &middot;
+          <time datetime="{{ item.reviewed_at }}">{{ item.reviewed_at[:16]|replace("T", " ") }} UTC</time>
+        </summary>
+        {% if item.notes %}<p class="review-notes">{{ item.notes }}</p>{% endif %}
+        {% if item.criteria %}
+        <ul>
+        {% for key, label in core_criteria.items() %}
+          {% set check = item.criteria[key] %}
+          <li><strong>{{ label }}</strong> &middot; {{ criterion_review_labels[check.status] }}
+            {% if check.notes %}<p class="review-notes">{{ check.notes }}</p>{% endif %}
+            {% if check.source_url %}<p>Reviewer source: {{ check.source_url }}</p>{% endif %}
+          </li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+      </details>
+      {% endfor %}
+    </section>
+    {% endif %}
+    {% elif section == "companies" %}
+    {% if account.role == "admin" %}
+    <section class="card settings-card" aria-labelledby="research-title">
+      <h2 id="research-title">Research companies</h2>
+      <form action="/companies/research" method="post">
+        <label for="research-count">Companies to research</label>
+        <select name="count" id="research-count">
+          {% for amount in range(1, company_limit + 1) %}
+          <option value="{{ amount }}" {% if amount == default_company_count %}selected{% endif %}>{{ amount }}</option>
+          {% endfor %}
+        </select>
+        <label for="research-domains">Company domains (optional)</label>
+        <textarea name="domains" id="research-domains" rows="3" maxlength="4096" placeholder="example.com"></textarea>
+        <p>Enter up to 10 domains, one per line, to research them directly. Leave blank for automatic discovery.</p>
+        <button type="submit" {% if research.running %}disabled{% endif %}>Start research</button>
+      </form>
+      <p id="research-progress" role="status" data-running="{{ 'yes' if research.running else 'no' }}">
+        {% if research.requested %}
+        {{ research.message }} {{ research.completed }} attempted. Target: {{ research.requested }}.
+        {{ research.screened }} candidates screened. {{ research.saved }} saved, {{ research.existing }} already present,
+        {{ research.failed }} save failures. {{ research.incomplete }} with unresolved fit criteria.
+        {{ research.issues }} research issues.
+        {% endif %}
+      </p>
+      {% if research.stop_reason %}
+      <p><strong>Why the batch stopped</strong> {{ research.stop_reason }}</p>
+      <details><summary>Batch report</summary>
+        <p><a href="/companies/research/status?download=true">Download JSON report</a></p>
+        <ul>
+        {% for attempt in research.attempts %}
+          <li><strong>{{ attempt.website }}</strong> &mdash; {{ attempt.outcome }}.
+            {% if attempt.qualification %}{{ ai_labels.get(attempt.qualification, attempt.qualification) }}.{% endif %}
+            {% if attempt.reason %}{{ attempt.reason }}{% endif %}
+            {% if attempt.unresolved %}Unresolved: {{ attempt.unresolved|join(", ") }}.{% endif %}
+            {% if attempt.missing %}Missing: {{ attempt.missing|join(", ") }}.{% endif %}
+            {% if attempt.errors %}Errors: {{ attempt.errors|join(", ") }}.{% endif %}
+          </li>
+        {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+      {% if research.skip_counts or research.missing_counts %}
+      <details><summary>Why candidates were skipped</summary>
+        <ul>
+        {% for label, count in research.skip_counts.items() %}<li>{{ label|replace("_", " ")|capitalize }}: {{ count }}</li>{% endfor %}
+        {% for criterion, count in research.missing_counts.items() %}<li>{{ missing_labels.get(criterion, criterion) }} unresolved: {{ count }}</li>{% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+    </section>
+    <script>
+      const progress = document.getElementById("research-progress");
+      if (progress.dataset.running === "yes") {
+        async function refreshProgress() {
+          try {
+            const response = await fetch("/companies/research/status", {cache: "no-store"});
+            if (response.status === 401 || response.status === 403) {
+              window.location.reload();
+              return;
+            }
+            if (!response.ok) throw new Error("Cannot read research status");
+            const state = await response.json();
+            if (!state.running) {
+              window.location.reload();
+              return;
+            }
+            progress.textContent = state.message + " (" + state.completed + " attempted, target " +
+              state.requested + ", " + state.saved + " saved, " +
+              state.incomplete + " incomplete, " + state.issues + " issues)";
+          } catch {
+            progress.textContent = "Research progress is temporarily unavailable. Retrying.";
+          }
+          window.setTimeout(refreshProgress, 3000);
+        }
+        window.setTimeout(refreshProgress, 1000);
+      }
+    </script>
+    {% endif %}
+    <form action="/dashboard/companies" method="get" class="card settings-card company-filters">
+      <label>Search <input name="q" value="{{ filters.q }}" placeholder="Company or domain" maxlength="120"></label>
+      <label>AI qualification
+        <select name="ai"><option value="">All</option>
+        {% for key, label in ai_labels.items() %}<option value="{{ key }}" {% if filters.ai == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Human validation
+        <select name="human"><option value="">All</option>
+        {% for key, label in review_labels.items() %}<option value="{{ key }}" {% if filters.human == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Sales status
+        <select name="sales"><option value="">All</option>
+        {% for key in sales_statuses %}<option value="{{ key }}" {% if filters.sales == key %}selected{% endif %}>{{ key|replace("_", " ")|capitalize }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Sort
+        <select name="sort">
+          <option value="pending" {% if filters.sort == 'pending' %}selected{% endif %}>Pending first</option>
+          <option value="latest" {% if filters.sort == 'latest' %}selected{% endif %}>Latest research saved</option>
+          <option value="score" {% if filters.sort == 'score' %}selected{% endif %}>Highest AI score</option>
+        </select>
+      </label>
+      <div><button type="submit">Apply</button> <a href="/dashboard/companies">Clear</a></div>
+    </form>
+    {% if companies %}
+    <div class="card table-wrap">
+      <table class="companies-list">
+        <thead><tr><th scope="col">Company</th><th scope="col">AI score</th><th scope="col">AI qualification</th><th scope="col">Human validation</th><th scope="col">Sales status</th><th scope="col">Research saved</th></tr></thead>
+        <tbody>
+          {% for company in companies %}
+          <tr>
+            <td><a href="/dashboard/companies?company_id={{ company.id }}">{{ company.name }}</a><div>{{ company.website }}</div><div>{{ company.contact_readiness }}</div></td>
+            <td>{{ company.score }}/100</td>
+            <td>{{ ai_labels[company.ai_status] }}{% if company.warnings %}<div class="company-warning">{{ company.warnings[:2]|join(' · ') }}</div>{% endif %}</td>
+            <td>{{ review_labels[company.human_status] }}</td>
+            <td>{{ company.status|replace("_", " ")|capitalize }}</td>
+            <td>{% if company.qualification_status %}<time datetime="{{ company.created_at }}">{{ company.created_at[:16]|replace("T", " ") }} UTC</time>{% else %}Unavailable{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}<p>No companies match this view.</p>{% endif %}
+    {% elif section == "conversations" %}
+    {% include "conversations.html" %}
+    {% elif section == "drafts" %}
+    {% include "email_drafts.html" %}
+    {% elif section == "meetings" %}
+    {% include "meetings.html" %}
+    {% elif section == "settings" %}
+    {% if notice %}<p role="status">{{ notice }}</p>{% endif %}
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    <section class="card settings-card">
+      <h2>My account</h2>
+      <p>{{ account.full_name }} &middot; {{ account.role|capitalize }}</p>
+      <p>{{ account.email }}</p>
+      <a href="/account/password">Change password</a>
+    </section>
+    {% if account.role == "admin" %}
+    <section class="card settings-card">
+      <h2>Employees</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Access</th><th>Actions</th></tr></thead>
+          <tbody>
+          {% for employee in employees %}
+            <tr>
+              <td>{{ employee.full_name }}</td><td>{{ employee.email }}</td><td>{{ employee.phone or 'None' }}</td>
+              <td>{{ employee.role|capitalize }}</td><td>{{ 'Active' if employee.active else 'Inactive' }}</td>
+              <td><a href="/dashboard/settings?edit={{ employee.user_id }}#employee-edit" aria-label="Edit {{ employee.full_name }}">Edit</a></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% for employee in employees if employee.user_id == edit %}
+      <div class="employee-actions" id="employee-edit">
+        <h3>Edit {{ employee.full_name }}</h3>
+        <form action="/settings/employees/{{ employee.user_id }}/edit" method="post">
+          <label>Full name <input name="full_name" value="{{ employee.full_name }}" maxlength="120" required></label>
+          <label>Phone (optional) <input name="phone" type="tel" value="{{ employee.phone or '' }}" maxlength="40"></label>
+          <label>Role <select name="role"><option value="reviewer" {% if employee.role == 'reviewer' %}selected{% endif %}>Reviewer</option><option value="admin" {% if employee.role == 'admin' %}selected{% endif %}>Admin</option></select></label>
+          <label>Access <select name="active"><option value="true" {% if employee.active %}selected{% endif %}>Active</option><option value="false" {% if not employee.active %}selected{% endif %}>Inactive</option></select></label>
+          {% if employee.active %}<label class="checkbox"><input type="checkbox" name="confirm_deactivation" value="true"> Confirm deactivation if access is set to Inactive</label>{% endif %}
+          <button type="submit">Save changes</button>
+          <a href="/dashboard/settings">Cancel</a>
+        </form>
+        {% if employee.active %}
+        <form action="/settings/employees/{{ employee.user_id }}/reset" method="post" class="employee-actions">
+          <label class="checkbox"><input type="checkbox" name="confirmed" value="true" required> I verified this employee's identity.</label>
+          <button type="submit">Send password reset link</button>
+        </form>
+        {% endif %}
+        <details class="employee-actions">
+          <summary>Delete account</summary>
+          <form action="/settings/employees/{{ employee.user_id }}/delete" method="post">
+            <p>This permanently removes the employee account. Sales records and conversations are kept.</p>
+            <label>Enter {{ employee.email }} to confirm
+              <input type="email" name="email" maxlength="254" autocomplete="off" required>
+            </label>
+            <button type="submit" class="danger">Delete account permanently</button>
+          </form>
+        </details>
+      </div>
+      {% endfor %}
+    </section>
+    <section class="card settings-card">
+      <h2>Pending invitations</h2>
+      {% if invitations %}
+      {% set labels = {"sending": "Sending", "awaiting": "Awaiting acceptance", "expired": "Expired",
+                       "failed": "Send failed", "interrupted": "Send interrupted", "cancelled": "Cancelled"} %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Last attempt (UTC)</th><th scope="col">Actions</th></tr></thead>
+          <tbody>
+          {% for invitation in invitations %}
+          <tr>
+            <td>{{ invitation.email }}</td>
+            <td>{{ invitation.role|capitalize }}</td>
+            <td>{{ labels[invitation.display_status] }}</td>
+            <td><time datetime="{{ invitation.last_attempt_at }}">{{ invitation.last_attempt_at[:16]|replace("T", " ") }}</time></td>
+            <td class="invitation-actions">
+              {% if invitation.can_resend %}
+              <form action="/settings/invitations/{{ invitation.id }}/resend" method="post"><button type="submit">Resend</button></form>
+              {% endif %}
+              {% if invitation.status != "cancelled" %}
+              <form action="/settings/invitations/{{ invitation.id }}/cancel" method="post"><button type="submit">Cancel invitation</button></form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}<p>No pending invitations.</p>{% endif %}
+    </section>
+    <section class="card settings-card">
+      <details>
+        <summary>Invite employee</summary>
+        <form action="/settings/employees/invite" method="post" class="employee-actions">
+          <label>Full name <input name="full_name" maxlength="120" required></label>
+          <label>Email <input name="email" type="email" maxlength="254" required></label>
+          <label>Phone (optional) <input name="phone" type="tel" maxlength="40"></label>
+          <label>Role <select name="role"><option value="reviewer">Reviewer</option><option value="admin">Admin</option></select></label>
+          <button type="submit">Send invitation</button>
+        </form>
+      </details>
+    </section>
+    {% endif %}
+    {% else %}
+    <p>This section will be available when its workflow is connected.</p>
+    {% endif %}
+  </main>
+</body>
+</html>

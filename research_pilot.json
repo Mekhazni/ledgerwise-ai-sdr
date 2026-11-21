@@ -1,0 +1,781 @@
+{
+  "summary": {
+    "companies_screened": 3,
+    "companies_found": 3,
+    "companies_with_profile_fit": 0,
+    "companies_with_recent_signal": 0,
+    "companies_qualified_for_review": 0,
+    "linkedin_urls_skipped": 1,
+    "shortfall": 0,
+    "search_requests": 15,
+    "tavily_extract_requests": 3,
+    "tavily_extract_recoveries": 3,
+    "gemini_requests": 6,
+    "page_retries": 0,
+    "unique_urls_attempted": 18,
+    "readable_pages": 9,
+    "unreadable_pages": 9,
+    "blocked_pages": 7,
+    "likely_javascript_pages": 0,
+    "other_page_failures": 2,
+    "quotes_passed": 15,
+    "quotes_failed": 0
+  },
+  "companies": [
+    {
+      "name": "Grüns",
+      "website": "gruns.com",
+      "reasons": [
+        {
+          "criterion": "ecommerce",
+          "finding": "Grüns sells its own products online, including a pack of 28 servings for $59.99 to $65.99 on its website.",
+          "evidence_status": "verified",
+          "source_url": "https://www.modernretail.co/operations/the-approach-that-helped-gruns-hit-a-500-million-valuation-in-2-years-and-land-at-sprouts-target-and-walmart/",
+          "quote": "A pack of 28 servings goes for $59.99 to $65.99 on Grüns’ website.",
+          "fit": "meets",
+          "recent_outreach_signal": false,
+          "source_method": "httpx"
+        },
+        {
+          "criterion": "location",
+          "finding": "The company is based in Beaverton, Oregon.",
+          "evidence_status": "verified",
+          "source_url": "https://www.cbinsights.com/company/grns",
+          "quote": "Headquarters Location 9450 South West Gemini Drive Beaverton, Oregon, 97008, United States",
+          "fit": "meets",
+          "recent_outreach_signal": false,
+          "source_method": "httpx"
+        },
+        {
+          "criterion": "size",
+          "finding": "The company reached a $50 million run rate in its first year.",
+          "evidence_status": "verified",
+          "source_url": "https://www.shopify.com/case-studies/gruns",
+          "quote": "$50 million run rate within the first year of selling",
+          "size_metric": "revenue",
+          "size_low": 50000000,
+          "size_high": 50000000,
+          "fit": "unclear",
+          "recent_outreach_signal": false,
+          "source_method": "httpx"
+        },
+        {
+          "criterion": "size",
+          "finding": "The company employs over 120 people.",
+          "evidence_status": "verified",
+          "source_url": "https://www.shopify.com/case-studies/gruns",
+          "quote": "employs over 120 people",
+          "size_metric": "headcount",
+          "size_low": 120,
+          "fit": "unclear",
+          "recent_outreach_signal": false,
+          "source_method": "httpx"
+        },
+        {
+          "criterion": "size",
+          "finding": "Grüns hit $300M annualized revenue by month 24.",
+          "evidence_status": "verified",
+          "source_url": "https://commonthreadco.com/blogs/coachs-corner/gruns-just-sold-for-1-2b-in-30-months-heres-what-it-means",
+          "quote": "By month 24, Grüns was at $300M annualized revenue",
+          "size_metric": "revenue",
+          "size_low": 300000000,
+          "size_high": 300000000,
+          "fit": "unclear",
+          "recent_outreach_signal": false,
+          "source_method": "httpx"
+        }
+      ],
+      "contact": {
+        "name": "Chad Janis",
+        "role": "Founder and CEO",
+        "source_url": "https://www.shopify.com/case-studies/gruns",
+        "quote": "Chad Janis — Founder and CEO",
+        "current_role": true,
+        "source_method": "httpx"
+      },
+      "page_urls": [
+        "https://gruns.com",
+        "https://www.shopify.com/case-studies/gruns",
+        "https://commonthreadco.com/blogs/coachs-corner/gruns-just-sold-for-1-2b-in-30-months-heres-what-it-means",
+        "https://www.modernretail.co/operations/the-approach-that-helped-gruns-hit-a-500-million-valuation-in-2-years-and-land-at-sprouts-target-and-walmart",
+        "https://www.cbinsights.com/company/grns",
+        "https://tracxn.com/d/companies/gruns/__3k46UaYJ8K0vH-L9wP7aqJwXHC4PJOtVvGQ7xhDG9u8"
+      ],
+      "tavily_extract": {
+        "url": "https://tracxn.com/d/companies/gruns/__3k46UaYJ8K0vH-L9wP7aqJwXHC4PJOtVvGQ7xhDG9u8",
+        "status": "readable",
+        "characters": 3430,
+        "credits": 0
+      },
+      "errors": [
+        {
+          "stage": "pages for Grüns",
+          "detail": "https://gruns.com: other_failure (ConnectError)"
+        }
+      ],
+      "score": 50,
+      "fit_score": 50,
+      "timing_score": 0,
+      "score_breakdown": {
+        "location": {
+          "points": 25,
+          "evidence": "verified"
+        },
+        "ecommerce": {
+          "points": 25,
+          "evidence": "verified"
+        },
+        "revenue": {
+          "points": 0,
+          "evidence": "conflicting"
+        },
+        "headcount": {
+          "points": 0,
+          "evidence": "missing"
+        }
+      },
+      "qualification_status": "needs_more_research",
+      "profile_fit": false,
+      "has_recent_outreach_signal": false,
+      "missing_information": [
+        "revenue",
+        "headcount",
+        "recent_outreach_signal"
+      ],
+      "contact_status": "current_role_evidence_found",
+      "review_status": "needs_manual_review"
+    },
+    {
+      "name": "Cotto",
+      "website": "eatcotto.com",
+      "reasons": [
+        {
+          "criterion": "location",
+          "finding": "Cotto is based in New York, where the founder performs local pickups and sales.",
+          "evidence_status": "verified",
+          "source_url": "https://www.shopify.com/blog/cotto-sell-out-your-brand-at-launch-using-social-media-marketing",
+          "quote": "The reality is chaotic days of Kendall running around New York with her cooler backpack, coordinating park pickups to get Cotto to her customers.",
+          "fit": "meets",
+          "recent_outreach_signal": false,
+          "source_method": "httpx"
+        },
+        {
+          "criterion": "ecommerce",
+          "finding": "Cotto is a food brand that sells cottage cheese dips, though its primary sales method documented is currently in-person, not online store transactions.",
+          "evidence_status": "verified",
+          "source_url": "https://www.shopify.com/blog/cotto-sell-out-your-brand-at-launch-using-social-media-marketing",
+          "quote": "Kendall couldn’t afford to make dips—a refrigerated product with a limited shelf life—and hope customers would eventually appear.",
+          "fit": "unclear",
+          "recent_outreach_signal": false,
+          "source_method": "httpx"
+        }
+      ],
+      "contact": {
+        "name": "Kendall Kransdorf",
+        "role": "founder",
+        "source_url": "https://www.shopify.com/blog/cotto-sell-out-your-brand-at-launch-using-social-media-marketing",
+        "quote": "Cotto founder Kendall Kransdorf sold out her first cottage cheese dip batch in 30 minutes",
+        "current_role": true,
+        "source_method": "httpx"
+      },
+      "page_urls": [
+        "https://eatcotto.com",
+        "https://www.shopify.com/blog/cotto-sell-out-your-brand-at-launch-using-social-media-marketing",
+        "https://pitchbook.com/profiles/company/455666-05",
+        "https://growjo.com/company/Cotton_Incorporated",
+        "https://pitchbook.com/profiles/company/1167914-17",
+        "https://www.youtube.com/watch?v=JLBuIRs6f_0"
+      ],
+      "tavily_extract": {
+        "url": "https://pitchbook.com/profiles/company/455666-05",
+        "status": "readable",
+        "characters": 2040,
+        "credits": 1
+      },
+      "errors": [
+        {
+          "stage": "pages for Cotto",
+          "detail": "https://eatcotto.com: other_failure (No text found in HTML)"
+        },
+        {
+          "stage": "pages for Cotto",
+          "detail": "https://growjo.com/company/Cotton_Incorporated: blocked (HTTP 403)"
+        },
+        {
+          "stage": "pages for Cotto",
+          "detail": "https://pitchbook.com/profiles/company/1167914-17: blocked (HTTP 403)"
+        }
+      ],
+      "score": 25,
+      "fit_score": 25,
+      "timing_score": 0,
+      "score_breakdown": {
+        "location": {
+          "points": 25,
+          "evidence": "verified"
+        },
+        "ecommerce": {
+          "points": 0,
+          "evidence": "unclear"
+        },
+        "revenue": {
+          "points": 0,
+          "evidence": "missing"
+        },
+        "headcount": {
+          "points": 0,
+          "evidence": "missing"
+        }
+      },
+      "qualification_status": "needs_more_research",
+      "profile_fit": false,
+      "has_recent_outreach_signal": false,
+      "missing_information": [
+        "ecommerce",
+        "revenue",
+        "headcount",
+        "recent_outreach_signal"
+      ],
+      "contact_status": "current_role_evidence_found",
+      "review_status": "needs_manual_review"
+    },
+    {
+      "name": "All In Food",
+      "website": "allinfood.com",
+      "reasons": [
+        {
+          "criterion": "ecommerce",
+          "finding": "All In Food sells snack bars directly to consumers through their website, including features for adding items to a cart and checking out.",
+          "evidence_status": "verified",
+          "source_url": "https://allinfood.com",
+          "quote": "Proceed to Checkout",
+          "fit": "meets",
+          "recent_outreach_signal": false,
+          "source_method": "httpx"
+        },
+        {
+          "criterion": "location",
+          "finding": "All In Food maintains a corporate office in Los Angeles, California.",
+          "evidence_status": "verified",
+          "source_url": "https://pitchbook.com/profiles/company/170773-84",
+          "quote": "Corporate Office 1370 North Street Andrews Place Los Angeles, CA 90028 United States",
+          "fit": "meets",
+          "recent_outreach_signal": false,
+          "source_method": "tavily_basic_extract"
+        },
+        {
+          "criterion": "funding",
+          "finding": "All In Food raised $4 million in a funding round led by Obvious Ventures.",
+          "evidence_status": "verified",
+          "source_url": "https://allinfood.com/blogs/partners/all-in-food-closes-4m-led-by-obvious-ventures-and-launches-at-starbucks",
+          "quote": "The launch is backed by a $4 million funding round led by Obvious Ventures, fueling the company's next stage of growth.",
+          "event_date": "2025-06-03",
+          "fit": "unclear",
+          "recent_outreach_signal": false,
+          "source_method": "httpx"
+        },
+        {
+          "criterion": "new_channel",
+          "finding": "The company launched its snack bars for sale at Starbucks retail locations.",
+          "evidence_status": "verified",
+          "source_url": "https://allinfood.com/blogs/partners/all-in-food-closes-4m-led-by-obvious-ventures-and-launches-at-starbucks",
+          "quote": "All In Food announced its debut with the launch of its Madagascar Vanilla snack bar at Starbucks.",
+          "event_date": "2025-06-03",
+          "fit": "unclear",
+          "recent_outreach_signal": false,
+          "source_method": "httpx"
+        },
+        {
+          "criterion": "size",
+          "finding": "All In Food has 14 employees.",
+          "evidence_status": "verified",
+          "source_url": "https://pitchbook.com/profiles/company/170773-84",
+          "quote": "All In has 14 total employees.",
+          "size_metric": "headcount",
+          "size_low": 14,
+          "size_high": 14,
+          "fit": "unclear",
+          "recent_outreach_signal": false,
+          "source_method": "tavily_basic_extract"
+        }
+      ],
+      "contact": {
+        "name": "James McGinnis",
+        "role": "CEO",
+        "source_url": "https://allinfood.com/blogs/partners/all-in-food-closes-4m-led-by-obvious-ventures-and-launches-at-starbucks",
+        "quote": "James McGinnis, CEO of All In and longtime CPG leader.",
+        "current_role": true,
+        "source_method": "httpx"
+      },
+      "page_urls": [
+        "https://allinfood.com",
+        "https://finance.yahoo.com/news/food-closes-4m-led-obvious-120000242.html",
+        "https://tavily.com/knowledge/company/Obi4SARYogT9",
+        "https://pitchbook.com/profiles/company/170773-84",
+        "https://allinfood.com/blogs/partners/all-in-food-closes-4m-led-by-obvious-ventures-and-launches-at-starbucks",
+        "https://www.foodbusinessnews.net/articles/28478-all-in-food-debuts-following-funding-round"
+      ],
+      "tavily_extract": {
+        "url": "https://pitchbook.com/profiles/company/170773-84",
+        "status": "readable",
+        "characters": 3078,
+        "credits": 0
+      },
+      "errors": [
+        {
+          "stage": "Gemini extraction for All In Food",
+          "detail": "Gemini HTTP 503. Retrying in at least 5.0s."
+        },
+        {
+          "stage": "pages for All In Food",
+          "detail": "https://finance.yahoo.com/news/food-closes-4m-led-obvious-120000242.html: blocked (HTTP 429)"
+        },
+        {
+          "stage": "pages for All In Food",
+          "detail": "https://www.foodbusinessnews.net/articles/28478-all-in-food-debuts-following-funding-round: blocked (HTTP 403)"
+        }
+      ],
+      "score": 65,
+      "fit_score": 65,
+      "timing_score": 0,
+      "score_breakdown": {
+        "location": {
+          "points": 25,
+          "evidence": "verified"
+        },
+        "ecommerce": {
+          "points": 25,
+          "evidence": "verified"
+        },
+        "revenue": {
+          "points": 0,
+          "evidence": "missing"
+        },
+        "headcount": {
+          "points": 15,
+          "evidence": "verified"
+        }
+      },
+      "qualification_status": "needs_more_research",
+      "profile_fit": false,
+      "has_recent_outreach_signal": false,
+      "missing_information": [
+        "revenue",
+        "recent_outreach_signal"
+      ],
+      "contact_status": "current_role_evidence_found",
+      "review_status": "needs_manual_review"
+    }
+  ],
+  "pages": [
+    {
+      "url": "https://gruns.com",
+      "status": "other_failure",
+      "detail": "ConnectError",
+      "attempts": 1
+    },
+    {
+      "url": "https://www.shopify.com/case-studies/gruns",
+      "status": "readable",
+      "detail": "",
+      "attempts": 1,
+      "final_url": "https://www.shopify.com/case-studies/gruns"
+    },
+    {
+      "url": "https://commonthreadco.com/blogs/coachs-corner/gruns-just-sold-for-1-2b-in-30-months-heres-what-it-means",
+      "status": "readable",
+      "detail": "",
+      "attempts": 1,
+      "final_url": "https://commonthreadco.com/blogs/coachs-corner/gruns-just-sold-for-1-2b-in-30-months-heres-what-it-means"
+    },
+    {
+      "url": "https://www.modernretail.co/operations/the-approach-that-helped-gruns-hit-a-500-million-valuation-in-2-years-and-land-at-sprouts-target-and-walmart",
+      "status": "readable",
+      "detail": "",
+      "attempts": 1,
+      "final_url": "https://www.modernretail.co/operations/the-approach-that-helped-gruns-hit-a-500-million-valuation-in-2-years-and-land-at-sprouts-target-and-walmart/"
+    },
+    {
+      "url": "https://www.cbinsights.com/company/grns",
+      "status": "readable",
+      "detail": "",
+      "attempts": 1,
+      "final_url": "https://www.cbinsights.com/company/grns"
+    },
+    {
+      "url": "https://tracxn.com/d/companies/gruns/__3k46UaYJ8K0vH-L9wP7aqJwXHC4PJOtVvGQ7xhDG9u8",
+      "status": "blocked",
+      "detail": "HTTP 403",
+      "attempts": 1,
+      "final_url": "https://tracxn.com/d/companies/gruns/__3k46UaYJ8K0vH-L9wP7aqJwXHC4PJOtVvGQ7xhDG9u8"
+    },
+    {
+      "url": "https://eatcotto.com",
+      "status": "other_failure",
+      "detail": "No text found in HTML",
+      "attempts": 1,
+      "final_url": "https://eatcotto.com"
+    },
+    {
+      "url": "https://www.shopify.com/blog/cotto-sell-out-your-brand-at-launch-using-social-media-marketing",
+      "status": "readable",
+      "detail": "",
+      "attempts": 1,
+      "final_url": "https://www.shopify.com/blog/cotto-sell-out-your-brand-at-launch-using-social-media-marketing"
+    },
+    {
+      "url": "https://pitchbook.com/profiles/company/455666-05",
+      "status": "blocked",
+      "detail": "HTTP 403",
+      "attempts": 1,
+      "final_url": "https://pitchbook.com/profiles/company/455666-05"
+    },
+    {
+      "url": "https://growjo.com/company/Cotton_Incorporated",
+      "status": "blocked",
+      "detail": "HTTP 403",
+      "attempts": 1,
+      "final_url": "https://growjo.com/company/Cotton_Incorporated"
+    },
+    {
+      "url": "https://pitchbook.com/profiles/company/1167914-17",
+      "status": "blocked",
+      "detail": "HTTP 403",
+      "attempts": 1,
+      "final_url": "https://pitchbook.com/profiles/company/1167914-17"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=JLBuIRs6f_0",
+      "status": "readable",
+      "detail": "",
+      "attempts": 1,
+      "final_url": "https://www.youtube.com/watch?v=JLBuIRs6f_0"
+    },
+    {
+      "url": "https://allinfood.com",
+      "status": "readable",
+      "detail": "",
+      "attempts": 1,
+      "final_url": "https://allinfood.com"
+    },
+    {
+      "url": "https://finance.yahoo.com/news/food-closes-4m-led-obvious-120000242.html",
+      "status": "blocked",
+      "detail": "HTTP 429",
+      "attempts": 1,
+      "final_url": "https://finance.yahoo.com/news/food-closes-4m-led-obvious-120000242.html"
+    },
+    {
+      "url": "https://tavily.com/knowledge/company/Obi4SARYogT9",
+      "status": "readable",
+      "detail": "",
+      "attempts": 1,
+      "final_url": "https://www.tavily.com/knowledge/company/Obi4SARYogT9"
+    },
+    {
+      "url": "https://pitchbook.com/profiles/company/170773-84",
+      "status": "blocked",
+      "detail": "HTTP 403",
+      "attempts": 1,
+      "final_url": "https://pitchbook.com/profiles/company/170773-84"
+    },
+    {
+      "url": "https://allinfood.com/blogs/partners/all-in-food-closes-4m-led-by-obvious-ventures-and-launches-at-starbucks",
+      "status": "readable",
+      "detail": "",
+      "attempts": 1,
+      "final_url": "https://allinfood.com/blogs/partners/all-in-food-closes-4m-led-by-obvious-ventures-and-launches-at-starbucks"
+    },
+    {
+      "url": "https://www.foodbusinessnews.net/articles/28478-all-in-food-debuts-following-funding-round",
+      "status": "blocked",
+      "detail": "HTTP 403",
+      "attempts": 1,
+      "final_url": "https://www.foodbusinessnews.net/articles/28478-all-in-food-debuts-following-funding-round"
+    }
+  ],
+  "discovery_batches": [
+    {
+      "search_results": 15,
+      "proposed": 1,
+      "accepted": 1,
+      "skipped": []
+    },
+    {
+      "search_results": 15,
+      "proposed": 5,
+      "accepted": 4,
+      "skipped": [
+        {
+          "website": "llskitchen.com",
+          "reason": "skipped_no_storefront_clue"
+        }
+      ]
+    }
+  ],
+  "candidate_screening": [
+    {
+      "name": "Lulus",
+      "website": "lulus.com",
+      "storefront_clue": "Lulus launched a dedicated Amazon storefront featuring a curated, mostly Amazon-exclusive dress assortment.",
+      "why": "Lulus is a well-established US-based fashion brand that operates its own online store and has expanded into an Amazon storefront to reach new customers, fitting the criteria for a consumer brand.",
+      "business_type": "product_brand",
+      "us_base": "likely_match",
+      "revenue": "likely_mismatch",
+      "headcount": "likely_mismatch",
+      "source_urls": [
+        "https://markets.businessinsider.com/news/stocks/lulus-expands-digital-wholesale-footprint-with-amazon-storefront-and-new-partnership-with-victoria-s-secret-1035936289",
+        "https://www.stocktitan.net/news/LVLU/lulus-expands-digital-wholesale-footprint-with-amazon-storefront-and-qdbycq470iez.html"
+      ],
+      "priority": 0,
+      "decision": "not_shortlisted"
+    },
+    {
+      "name": "Grüns",
+      "website": "gruns.com",
+      "storefront_clue": "How Grüns Scaled from a Stanford Dorm Room to a $200M+ Nutrition Brand on Shopify",
+      "why": "The brand uses Shopify, has grown from a startup to a significant nutrition brand, and exhibits characteristics of a successful DTC product brand.",
+      "business_type": "product_brand",
+      "us_base": "likely_match",
+      "revenue": "likely_match",
+      "headcount": "likely_match",
+      "source_urls": [
+        "https://www.shopify.com/case-studies/gruns"
+      ],
+      "priority": 4,
+      "decision": "selected"
+    },
+    {
+      "name": "Cotto",
+      "website": "eatcotto.com",
+      "storefront_clue": "Cotto founder Kendall Kransdorf sold out her first cottage cheese dip batch in 30 minutes",
+      "why": "Cotto is a D2C food brand built on Shopify currently scaling its operations, fitting the startup profile.",
+      "business_type": "product_brand",
+      "us_base": "likely_match",
+      "revenue": "unknown",
+      "headcount": "unknown",
+      "source_urls": [
+        "https://www.shopify.com/blog/cotto-sell-out-your-brand-at-launch-using-social-media-marketing"
+      ],
+      "priority": 2,
+      "decision": "selected"
+    },
+    {
+      "name": "LL's Kitchen",
+      "website": "llskitchen.com",
+      "storefront_clue": "LL's Kitchen Announces First-Ever National Retail Launch of Better-for-You Granola",
+      "why": "A growing woman-owned food brand that recently expanded into national retail (Sprouts), indicating successful scaling.",
+      "business_type": "product_brand",
+      "us_base": "likely_match",
+      "revenue": "unknown",
+      "headcount": "likely_match",
+      "source_urls": [
+        "https://www.nosh.com/pr/2026/06/09/lls-kitchen-announces-firstever-national-retail-launch-of-betterforyou-granola-in-487-sprouts-farmers-market-locations"
+      ],
+      "decision": "skipped_no_storefront_clue"
+    },
+    {
+      "name": "All In Food",
+      "website": "allinfood.com",
+      "storefront_clue": "All In Food Closes $4M Led by Obvious Ventures and Launches In Retail",
+      "why": "Recently secured $4M in funding and is expanding national retail distribution, fitting the growth criteria.",
+      "business_type": "product_brand",
+      "us_base": "likely_match",
+      "revenue": "unknown",
+      "headcount": "unknown",
+      "source_urls": [
+        "https://finance.yahoo.com/news/food-closes-4m-led-obvious-120000242.html"
+      ],
+      "priority": 2,
+      "decision": "selected"
+    },
+    {
+      "name": "Sourse",
+      "website": "trysourse.com",
+      "storefront_clue": "Sourse secures $2.4 million in seed funding as VCs look to 'snackable skin care'",
+      "why": "A beauty/wellness brand that has secured venture funding and established retail presence in major chains.",
+      "business_type": "product_brand",
+      "us_base": "likely_match",
+      "revenue": "unknown",
+      "headcount": "unknown",
+      "source_urls": [
+        "https://www.glossy.co/beauty/sourse-secures-2-4-million-in-seed-funding-as-vcs-look-to-snackable-skin-care"
+      ],
+      "priority": 2,
+      "decision": "not_shortlisted"
+    }
+  ],
+  "skipped_linkedin_urls": [
+    "https://www.linkedin.com/company/getcotto"
+  ],
+  "quote_checks": [
+    {
+      "company": "Grüns",
+      "kind": "ecommerce",
+      "source_url": "https://www.modernretail.co/operations/the-approach-that-helped-gruns-hit-a-500-million-valuation-in-2-years-and-land-at-sprouts-target-and-walmart/",
+      "quote": "A pack of 28 servings goes for $59.99 to $65.99 on Grüns’ website.",
+      "passed": true
+    },
+    {
+      "company": "Grüns",
+      "kind": "location",
+      "source_url": "https://www.cbinsights.com/company/grns",
+      "quote": "Headquarters Location 9450 South West Gemini Drive Beaverton, Oregon, 97008, United States",
+      "passed": true
+    },
+    {
+      "company": "Grüns",
+      "kind": "size",
+      "source_url": "https://www.shopify.com/case-studies/gruns",
+      "quote": "$50 million run rate within the first year of selling",
+      "passed": true
+    },
+    {
+      "company": "Grüns",
+      "kind": "size",
+      "source_url": "https://www.shopify.com/case-studies/gruns",
+      "quote": "employs over 120 people",
+      "passed": true
+    },
+    {
+      "company": "Grüns",
+      "kind": "size",
+      "source_url": "https://commonthreadco.com/blogs/coachs-corner/gruns-just-sold-for-1-2b-in-30-months-heres-what-it-means",
+      "quote": "By month 24, Grüns was at $300M annualized revenue",
+      "passed": true
+    },
+    {
+      "company": "Grüns",
+      "kind": "contact",
+      "source_url": "https://www.shopify.com/case-studies/gruns",
+      "quote": "Chad Janis — Founder and CEO",
+      "passed": true
+    },
+    {
+      "company": "Cotto",
+      "kind": "location",
+      "source_url": "https://www.shopify.com/blog/cotto-sell-out-your-brand-at-launch-using-social-media-marketing",
+      "quote": "The reality is chaotic days of Kendall running around New York with her cooler backpack, coordinating park pickups to get Cotto to her customers.",
+      "passed": true
+    },
+    {
+      "company": "Cotto",
+      "kind": "ecommerce",
+      "source_url": "https://www.shopify.com/blog/cotto-sell-out-your-brand-at-launch-using-social-media-marketing",
+      "quote": "Kendall couldn’t afford to make dips—a refrigerated product with a limited shelf life—and hope customers would eventually appear.",
+      "passed": true
+    },
+    {
+      "company": "Cotto",
+      "kind": "contact",
+      "source_url": "https://www.shopify.com/blog/cotto-sell-out-your-brand-at-launch-using-social-media-marketing",
+      "quote": "Cotto founder Kendall Kransdorf sold out her first cottage cheese dip batch in 30 minutes",
+      "passed": true
+    },
+    {
+      "company": "All In Food",
+      "kind": "ecommerce",
+      "source_url": "https://allinfood.com",
+      "quote": "Proceed to Checkout",
+      "passed": true
+    },
+    {
+      "company": "All In Food",
+      "kind": "location",
+      "source_url": "https://pitchbook.com/profiles/company/170773-84",
+      "quote": "Corporate Office 1370 North Street Andrews Place Los Angeles, CA 90028 United States",
+      "passed": true
+    },
+    {
+      "company": "All In Food",
+      "kind": "funding",
+      "source_url": "https://allinfood.com/blogs/partners/all-in-food-closes-4m-led-by-obvious-ventures-and-launches-at-starbucks",
+      "quote": "The launch is backed by a $4 million funding round led by Obvious Ventures, fueling the company's next stage of growth.",
+      "passed": true
+    },
+    {
+      "company": "All In Food",
+      "kind": "new_channel",
+      "source_url": "https://allinfood.com/blogs/partners/all-in-food-closes-4m-led-by-obvious-ventures-and-launches-at-starbucks",
+      "quote": "All In Food announced its debut with the launch of its Madagascar Vanilla snack bar at Starbucks.",
+      "passed": true
+    },
+    {
+      "company": "All In Food",
+      "kind": "size",
+      "source_url": "https://pitchbook.com/profiles/company/170773-84",
+      "quote": "All In has 14 total employees.",
+      "passed": true
+    },
+    {
+      "company": "All In Food",
+      "kind": "contact",
+      "source_url": "https://allinfood.com/blogs/partners/all-in-food-closes-4m-led-by-obvious-ventures-and-launches-at-starbucks",
+      "quote": "James McGinnis, CEO of All In and longtime CPG leader.",
+      "passed": true
+    }
+  ],
+  "gemini_usage": [
+    {
+      "stage": "Gemini discovery",
+      "promptTokenCount": 5991,
+      "candidatesTokenCount": 270,
+      "totalTokenCount": 6261
+    },
+    {
+      "stage": "Gemini discovery",
+      "promptTokenCount": 5559,
+      "candidatesTokenCount": 906,
+      "totalTokenCount": 6465
+    },
+    {
+      "stage": "Gemini extraction for Grüns",
+      "promptTokenCount": 8711,
+      "candidatesTokenCount": 758,
+      "totalTokenCount": 9469
+    },
+    {
+      "stage": "Gemini extraction for Cotto",
+      "promptTokenCount": 3687,
+      "candidatesTokenCount": 403,
+      "totalTokenCount": 4090
+    },
+    {
+      "stage": "Gemini extraction for All In Food",
+      "promptTokenCount": 3388,
+      "candidatesTokenCount": 719,
+      "totalTokenCount": 4107
+    }
+  ],
+  "issues": [
+    {
+      "stage": "pages for Grüns",
+      "detail": "https://gruns.com: other_failure (ConnectError)"
+    },
+    {
+      "stage": "pages for Cotto",
+      "detail": "https://eatcotto.com: other_failure (No text found in HTML)"
+    },
+    {
+      "stage": "pages for Cotto",
+      "detail": "https://growjo.com/company/Cotton_Incorporated: blocked (HTTP 403)"
+    },
+    {
+      "stage": "pages for Cotto",
+      "detail": "https://pitchbook.com/profiles/company/1167914-17: blocked (HTTP 403)"
+    },
+    {
+      "stage": "Gemini extraction for All In Food",
+      "detail": "Gemini HTTP 503. Retrying in at least 5.0s."
+    },
+    {
+      "stage": "pages for All In Food",
+      "detail": "https://finance.yahoo.com/news/food-closes-4m-led-obvious-120000242.html: blocked (HTTP 429)"
+    },
+    {
+      "stage": "pages for All In Food",
+      "detail": "https://www.foodbusinessnews.net/articles/28478-all-in-food-debuts-following-funding-round: blocked (HTTP 403)"
+    }
+  ],
+  "error": null
+}

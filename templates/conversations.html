@@ -1,0 +1,485 @@
+<section class="card settings-card">
+  <div class="conversation-toolbar">
+    <h2>Company conversations</h2>
+    <form method="post" action="/conversations/sync">
+      {% if selected_conversation %}<input type="hidden" name="thread_id" value="{{ selected_conversation.id }}">{% endif %}
+      <button type="submit" {% if not conversations %}disabled{% endif %}>Sync inbox</button>
+    </form>
+  </div>
+  {% if sync_error %}<p class="error" role="alert">{{ sync_error }}</p>{% endif %}
+  {% if sync_stats %}
+  <p role="status">{{ sync_stats.imported }} replies imported &middot; {{ sync_stats.suppressed }} opt-outs imported &middot;
+    {{ sync_stats.duplicate }} already saved &middot; {{ sync_stats.skipped }} unmatched or unreadable &middot; {{ sync_stats.failed }} errors</p>
+  {% endif %}
+  <nav class="conversation-selector" aria-label="Company conversations">
+    {% for thread in conversations %}
+    <a class="conversation-card" href="/dashboard/conversations?thread_id={{ thread.id }}"
+      {% if selected_conversation and selected_conversation.id == thread.id %}aria-current="page"{% endif %}>
+      <strong>{{ thread.companies.name }}{% if thread.status == "needs_human" %}
+        <span class="conversation-takeover" title="Human attention needed" aria-label="Human attention needed">&#9888;</span>
+      {% endif %}</strong>
+      {% if thread.companies.status == "opted_out" %}<span>Opted out</span>
+      {% elif thread.status == "human_took_over" %}<span>Human takeover</span>{% endif %}
+      {% if thread.status == "needs_human" %}<span>{{ thread.handoff_reason }}</span>{% endif %}
+      {% if thread.primary_contact %}<span>{{ thread.primary_contact }}</span>{% endif %}
+      <small>{% if thread.pending %}<span class="pending-indicator" aria-hidden="true">&#9679;</span> {% endif %}{{ thread.pending }} awaiting approval</small>
+    </a>
+    {% else %}<p>No sent conversations yet.</p>{% endfor %}
+  </nav>
+</section>
+{% if selected_conversation %}
+<section class="card settings-card table-wrap">
+  <h2>{{ selected_conversation.companies.name }}{% if selected_conversation.status == "human_took_over" %} &middot; Human takeover{% endif %}</h2>
+  <p>{{ {"needs_human": "Human assistance needed", "human_took_over": "Human takeover", "ai_handles": "AI assistance"}[selected_conversation.status] }}
+    {% if selected_conversation.handoff_reason %}&middot; {{ selected_conversation.handoff_reason }}{% endif %}</p>
+  {% if selected_conversation.companies.status != "opted_out" %}
+    {% if selected_conversation.status != "human_took_over" or not selected_conversation.owner or selected_conversation.owner == account.user_id %}
+      {% set taking_over = selected_conversation.status != "human_took_over" or not selected_conversation.owner %}
+      <form method="post" data-ownership-action action="/conversations/threads/{{ selected_conversation.id }}/{{ 'takeover' if taking_over else 'return_to_ai' }}">
+        <button>{{ "Take over" if taking_over else "Return to AI Assistance" }}</button>
+        <p role="status"></p>
+      </form>
+    {% endif %}
+  {% endif %}
+  {% if selected_conversation.status == "human_took_over" and selected_conversation.owner == account.user_id
+        and selected_conversation.companies.status != "opted_out" %}
+  <button type="button" id="open-reviewer-schedule">Schedule meeting</button>
+  <dialog class="card draft-review email-review" id="reviewer-schedule" aria-labelledby="reviewer-schedule-title">
+    <header><h2 id="reviewer-schedule-title">Schedule meeting</h2><form method="dialog"><button>Close</button></form></header>
+    <p id="schedule-contact"></p>
+    <p id="schedule-status" role="status"></p>
+    <form id="schedule-offer" hidden>
+      <p id="schedule-timezone"></p>
+      <div class="meeting-calendar-controls">
+        <button type="button" id="schedule-prev" aria-label="Previous month">&#8249;</button>
+        <label>Month <select id="schedule-month"></select></label>
+        <label>Year <input type="number" id="schedule-year" min="2000" max="2099"></label>
+        <button type="button" id="schedule-next" aria-label="Next month">&#8250;</button>
+      </div>
+      <div class="meeting-calendar-grid" aria-label="Availability calendar">
+        {% for day in ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"] %}<strong>{{ day }}</strong>{% endfor %}
+        <div id="schedule-days"></div>
+      </div>
+      <fieldset><legend id="schedule-day-label">Available times</legend><div id="schedule-slots"></div></fieldset>
+      <div id="schedule-selected" aria-live="polite"></div>
+      <button type="submit">Prepare offer for approval</button>
+    </form>
+    <form id="schedule-book" hidden>
+      <h3>Prospect confirmation</h3>
+      <blockquote id="schedule-confirmation-message"></blockquote>
+      <p id="schedule-confirmed-time"></p>
+      <label><input required type="checkbox" name="reviewed"> I reviewed the prospect?s confirmation of this time.</label>
+      <button>Confirm booking</button>
+    </form>
+  </dialog>
+  {% endif %}
+  <table class="conversation-timeline">
+    <thead><tr><th>Direction</th><th>Subject</th><th>Date and time</th><th>Status</th><th>Approved by</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for message in conversation_messages %}
+      {% set incoming = message.status == "received" %}
+      {% set approval = message.review_events|selectattr("action", "equalto", "approve")|list|last %}
+      <tr>
+        <td>{{ "IN" if incoming else "OUT" }}</td><td>{{ message.subject or "(No subject)" }}</td>
+        <td><time data-local-time datetime="{{ message.timeline_at }}">{{ message.timeline_at }}</time></td>
+        <td>{% if message.send_state == "unknown" %}Delivery unknown
+            {% elif message.send_state == "sending" %}Sending
+            {% elif message.send_state == "failed" %}Failed
+            {% elif incoming and message.pending_booking %}{{ "Slot confirmed" if message.booking_enabled else "Booking disabled" }}
+            {% elif incoming and message.reply_job and message.reply_job.state == "failed" %}Received &middot; AI reply failed
+            {% elif incoming and message.review_events|selectattr("action", "equalto", "booking_confirmed")|list %}Booking confirmed
+            {% elif message.status == "draft" %}<span class="pending-indicator" aria-hidden="true">&#9679;</span> Pending approval
+            {% else %}{{ message.status|capitalize }}{% endif %}</td>
+        <td>{{ approval.name if approval else "?" }}</td>
+        <td><button type="button" data-conversation-email="{{ 'reply-history-' ~ message.reply_to_id if message.reply_to_id else 'conversation-email-' ~ message.id }}">View email</button></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% for message in conversation_messages %}
+{% set incoming = message.status == "received" %}
+<dialog class="card draft-review email-review" id="{{ 'reply-history-' ~ message.reply_to_id if message.reply_to_id else 'conversation-email-' ~ message.id }}" aria-labelledby="conversation-title-{{ message.id }}">
+  <header><h2 id="conversation-title-{{ message.id }}">{{ message.subject or "(No subject)" }}</h2>
+    <form method="dialog"><button type="submit">Close</button></form></header>
+  {% if message.reply_to_id %}
+    <nav class="draft-actions draft-version-navigation" aria-label="Reply versions">
+      <button type="button" data-reply-step="-1" {% if message.reply_versions|length < 2 %}disabled{% endif %}>Previous version</button>
+      <button type="button" data-reply-step="1" disabled>Next version</button>
+    </nav>
+    {% for version in message.reply_versions %}
+    <article data-reply-version {% if not loop.last %}hidden{% endif %}>
+      <p>{{ version.status|capitalize }} &middot; Version {{ version.version }} of {{ message.version }}</p>
+      {% if not loop.last %}<p>Older version &middot; Read only</p>{% endif %}
+      <h3>{{ version.subject }}</h3>
+      <pre>{{ version.body }}</pre>
+      {% for event in version.review_events %}
+        {% if event.decision %}<p>{{ event.decision.action|replace("_"," ")|capitalize }} &middot; {{ event.decision.reason }}</p>
+        {% else %}<p>{{ event.action|capitalize }}{% if event.name %} by {{ event.name }}{% endif %} &middot; {{ event.at }}</p>{% endif %}
+      {% endfor %}
+      {% if version.actual_recipient %}<p>Test recipient: {{ version.actual_recipient }}</p>{% endif %}
+      <h3>Supporting evidence</h3>
+      <ul>{% for fact in version.facts_used %}<li>{{ fact.quote }}{% if fact.safe_url %} <a href="{{ fact.safe_url }}">Source</a>{% endif %}</li>
+          {% else %}<li>No company-specific claims cited.</li>{% endfor %}</ul>
+      {% if version.send_error %}<p role="alert" class="error">{{ version.send_error }}</p>{% endif %}
+      {% if loop.last and message.reply_job and message.reply_job.decision
+            and not (version.review_events|selectattr("decision")|list) %}
+      <p>AI decision: {{ message.reply_job.decision.action|replace("_"," ")|capitalize }} &middot; {{ message.reply_job.decision.reason }}</p>
+      {% endif %}
+      {% set scheduling = version.offered_slots or version.review_events|selectattr("decision","defined")|map(attribute="decision")|selectattr("intent","equalto","meeting_scheduling")|list %}
+      {% if loop.last and message.pending_booking %}
+        <p>Open the prospect's incoming email to process the confirmed slot.</p>
+      {% elif loop.last and (message.can_draft_reply or message.can_review_reply) %}
+        {% if message.reply_job and message.reply_job.error %}<p class="error" role="alert">{{ message.reply_job.error }}</p>{% endif %}
+        {% set clarification = not version.offered_slots and
+            (version.review_events|selectattr("decision","defined")|map(attribute="decision")|
+             selectattr("reason","equalto","The prospect's requested time or confirmation is unclear.")|list) %}
+        {% if message.can_draft_reply and (not scheduling or clarification) and version.status in ("draft", "rejected") %}
+        <form method="post" data-reply-action action="/conversations/incoming/{{ message.reply_to_id }}/generate">
+          <input type="hidden" name="version_id" value="{{ version.id }}"><button type="submit" data-regenerate-reply>{{ "Retry regeneration" if message.reply_job and message.reply_job.error else "Regenerate with AI" }}</button>
+        </form>
+        {% endif %}
+        {% if version.status == "draft" %}
+        {% if not scheduling %}
+        <details><summary>Edit</summary>
+          <form method="post" data-reply-action action="/conversations/replies/{{ version.id }}/edit">
+            <input type="hidden" name="version" value="{{ version.version }}">
+            <label>Reply body <textarea name="body" required maxlength="1600">{{ version.body }}</textarea></label>
+            <button>Save edits</button>
+          </form>
+        </details>
+        {% endif %}
+        <footer class="draft-actions draft-review-actions">
+        {% for action,label in [("approve","Approve and send"),("reject","Reject")] %}
+          {% if action != "approve" or not message.can_draft_reply or not message.reply_job or message.reply_job.state != "failed" %}
+          <form method="post" data-reply-action action="/conversations/replies/{{ version.id }}/{{ action }}">
+            <input type="hidden" name="version" value="{{ version.version }}"><button>{{ label }}</button>
+          </form>
+          {% endif %}
+        {% endfor %}
+        </footer>
+        {% endif %}
+      {% endif %}
+    </article>
+    {% endfor %}
+  {% elif incoming %}
+    <p>Received &middot; <time data-local-time datetime="{{ message.timeline_at }}">{{ message.timeline_at }}</time></p>
+    {% if message.inbound_email %}
+    <p>From {{ message.inbound_email.sender }}<br>To {{ message.inbound_email.recipients|join(", ") }}</p>
+    {% endif %}
+  {% else %}
+    <p>Version {{ message.version }}{% if message.actual_recipient %} &middot; Delivered to {{ message.actual_recipient }}{% endif %}</p>
+    {% if message.initial_outreach %}<p>Intended contact: {{ message.initial_outreach.name or message.initial_outreach.business_email }} &middot; {{ message.initial_outreach.business_email }}</p>{% endif %}
+  {% endif %}
+  {% if not message.reply_to_id %}<pre>{{ message.body }}</pre>{% endif %}
+  {% if incoming and not message.pending_booking and message.reply_job and message.reply_job.decision %}
+    <p>AI decision: {{ message.reply_job.decision.action|replace("_"," ")|capitalize }} &middot; {{ message.reply_job.decision.reason }}</p>
+  {% endif %}
+  {% if incoming %}
+    {% for event in message.review_events if event.action == "handoff_corrected" %}
+    <p>Handoff reopened by {{ event.name }} &middot; {{ event.at }}<br>
+      Original decision: {{ event.previous_decision.action|replace("_"," ") }} &middot; {{ event.previous_decision.reason }}</p>
+    {% endfor %}
+    {% for event in message.review_events if event.action == "booking_confirmed" %}
+      <p>Booking confirmed &middot; <a href="/dashboard/meetings">View in Meetings</a></p>
+    {% else %}
+      {% if message.review_events|selectattr("action", "equalto", "booking_requested")|list %}
+        <p>Booking requested. Verify its outcome in Cal.com before retrying.</p>
+      {% endif %}
+    {% endfor %}
+    {% for event in message.review_events if event.action in ("takeover", "return_to_ai") %}
+      <p>{{ "Took over" if event.action == "takeover" else "Returned to AI" }} &middot; {{ event.name }} &middot; {{ event.at }}
+        {% if event.reason %}&middot; {{ event.reason }}{% endif %}</p>
+    {% endfor %}
+    {% if message.can_compose_reply %}
+      <form method="post" data-reply-action action="/conversations/incoming/{{ message.id }}/compose">
+        <label>Reply body <textarea name="body" required maxlength="1600"></textarea></label>
+        <button>Save reply draft</button>
+      </form>
+    {% endif %}
+    {% if message.can_reopen_handoff %}
+    <form method="post" data-reply-action action="/conversations/incoming/{{ message.id }}/reopen">
+      <button type="submit" data-analyze-reply>Reopen mistaken handoff and retry</button>
+    </form>
+    {% endif %}
+  {% endif %}
+  {% if incoming and message.reply_job and message.reply_job.state == "generating" %}
+    <p role="status">Generating AI reply. Select the company again to check progress.</p>
+  {% endif %}
+  {% if incoming and message.pending_booking %}
+    <p>{{ "Slot confirmed" if message.booking_enabled else "Booking disabled" }} &middot; {{ message.pending_booking }}</p>
+    {% if message.booking_enabled and (not message.reply_job or message.reply_job.state != "generating") %}
+    <form method="post" data-reply-action action="/conversations/incoming/{{ message.id }}/generate">
+      <input type="hidden" name="process_booking" value="true">
+      {% if message.booking_retry_version %}<input type="hidden" name="version_id" value="{{ message.booking_retry_version }}">{% endif %}
+      <button type="submit">Process confirmed booking</button>
+    </form>
+    {% endif %}
+  {% elif incoming and message.can_draft_reply and (not message.reply_job or message.reply_job.state == "failed") %}
+    {% if message.reply_job %}<p class="error" role="alert">{{ message.reply_job.error }}</p>{% endif %}
+    <form method="post" data-reply-action action="/conversations/incoming/{{ message.id }}/generate">
+      <button type="submit" data-analyze-reply>{{ "Retry AI reply" if message.reply_job else "Analyze with AI" }}</button>
+    </form>
+  {% endif %}
+  <p data-reply-status role="status" hidden></p>
+  {% if not incoming and not message.reply_to_id %}
+  <details><summary>Edit and approval history</summary>
+    {% for version in conversation_history %}
+    <h3>Version {{ version.version }} &middot; {{ version.status|capitalize }}</h3>
+    <p>{{ version.subject }}</p><pre>{{ version.body }}</pre>
+    <ul>{% for event in version.review_events %}<li>{{ event.action|capitalize }}{% if event.name %} by {{ event.name }}{% endif %} &middot; {{ event.at }}</li>{% endfor %}</ul>
+    {% endfor %}
+  </details>
+  {% endif %}
+</dialog>
+{% endfor %}
+<script>
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-conversation-email]");
+  if (button) document.getElementById(button.dataset.conversationEmail)?.showModal();
+});
+const openDialog = document.getElementById(location.hash.slice(1));
+// The visible company is local to this visit. Refreshes use the unselected URL.
+history.replaceState(null, "", "/dashboard/conversations");
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) location.reload();
+});
+if (openDialog instanceof HTMLDialogElement) openDialog.showModal();
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-reply-step]");
+  if (!button) return;
+  const dialog = button.closest("dialog");
+  const versions = [...dialog.querySelectorAll("[data-reply-version]")];
+  const index = versions.findIndex((version) => !version.hidden) + Number(button.dataset.replyStep);
+  if (index < 0 || index >= versions.length) return;
+  versions.forEach((version, i) => { version.hidden = i !== index; });
+  dialog.querySelector('[data-reply-step="-1"]').disabled = index === 0;
+  dialog.querySelector('[data-reply-step="1"]').disabled = index === versions.length - 1;
+});
+document.addEventListener("submit", async (event) => {
+  const form = event.target;
+  if (form.matches("[data-ownership-action]")) {
+    event.preventDefault();
+    const button = form.querySelector("button");
+    button.disabled = true;
+    try {
+      const response = await fetch(form.action, {method: "POST"});
+      if (!response.ok) throw Error((await response.json()).detail);
+      location.replace("/dashboard/conversations?thread_id={{ selected_conversation.id }}");
+    } catch (error) {
+      form.querySelector("[role=status]").textContent = error.message;
+      button.disabled = false;
+    }
+    return;
+  }
+  if (!form.matches("[data-reply-action]")) return;
+  event.preventDefault();
+  const dialog = form.closest("dialog");
+  if (dialog.dataset.busy) return;
+  dialog.dataset.busy = "true";
+  const status = dialog.querySelector("[data-reply-status]");
+  status.hidden = false;
+  const button = form.querySelector("button");
+  const analyzing = button.hasAttribute("data-analyze-reply");
+  const regenerating = button.hasAttribute("data-regenerate-reply");
+  status.textContent = analyzing ? "Analyzing..." : regenerating ? "Regenerating..." :
+    form.action.endsWith("/approve") ? "Sending..." : "Working...";
+  button.disabled = true;
+  try {
+    const response = await fetch(form.action, {method: "POST", body: new FormData(form)});
+    const result = await response.json();
+    if (!response.ok) throw Error(result.detail || "The operation failed.");
+    const close = ["sent", "rejected"].includes(result.status);
+    if (close) dialog.close();
+    const dashboard = new URL("/dashboard/conversations", location.origin);
+    dashboard.searchParams.set("thread_id", "{{ selected_conversation.id }}");
+    if (regenerating) {
+      const fresh = await fetch(dashboard, {cache: "no-store"});
+      if (!fresh.ok) throw Error("The new draft was saved. Select the company again to view it.");
+      const page = new DOMParser().parseFromString(await fresh.text(), "text/html");
+      const next = page.getElementById(dialog.id);
+      if (!next) throw Error("The reply decision changed. Select the company again to review it.");
+      document.querySelector(".conversation-timeline").replaceWith(page.querySelector(".conversation-timeline"));
+      document.querySelector(".conversation-selector").replaceWith(page.querySelector(".conversation-selector"));
+      dialog.setAttribute("aria-labelledby", next.getAttribute("aria-labelledby"));
+      dialog.replaceChildren(...next.childNodes);
+      localizeConversationTimes();
+      return;
+    }
+    if (!close) dashboard.hash = dialog.id;
+    location.replace(dashboard);
+  } catch (error) {
+    status.textContent = error.message;
+    if (analyzing && form.action.endsWith("/reopen")) {
+      status.textContent += " Select the company again before retrying.";
+    } else if (analyzing) button.textContent = "Retry AI reply";
+    if (regenerating) button.textContent = "Retry regeneration";
+  } finally {
+    delete dialog.dataset.busy;
+    button.disabled = false;
+  }
+});
+const scheduleButton = document.getElementById("open-reviewer-schedule");
+if (scheduleButton) {
+  const endpoint = "/conversations/threads/{{ selected_conversation.id }}/schedule";
+  const dialog = document.getElementById("reviewer-schedule");
+  const status = document.getElementById("schedule-status");
+  const offerForm = document.getElementById("schedule-offer");
+  const bookForm = document.getElementById("schedule-book");
+  const monthInput = document.getElementById("schedule-month");
+  const yearInput = document.getElementById("schedule-year");
+  const days = document.getElementById("schedule-days");
+  const slotList = document.getElementById("schedule-slots");
+  const selectedList = document.getElementById("schedule-selected");
+  const picked = new Map();
+  let view, activeDay, requestNumber = 0;
+  const monthName = new Intl.DateTimeFormat(undefined, {month: "long"});
+  for (let index = 0; index < 12; index++) {
+    monthInput.add(new Option(monthName.format(new Date(2020, index, 1)), index));
+  }
+
+  function drawSelection() {
+    selectedList.replaceChildren();
+    const caption = document.createElement("p");
+    caption.textContent = "Selected times (" + picked.size + " of 3)";
+    selectedList.append(caption);
+    for (const slot of picked.values()) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "Remove " + slot.label;
+      button.onclick = () => { picked.delete(slot.start); drawDay(); };
+      selectedList.append(button);
+    }
+    offerForm.querySelector('button[type="submit"]').disabled = !picked.size;
+  }
+
+  function drawDay() {
+    document.getElementById("schedule-day-label").textContent = activeDay ? "Available times for " + activeDay : "Available times";
+    slotList.replaceChildren();
+    for (const slot of view.slots.filter(slot => slot.day === activeDay)) {
+      const line = document.createElement("div");
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = picked.has(slot.start);
+      input.disabled = picked.size === 3 && !input.checked;
+      input.onchange = () => {
+        if (input.checked) picked.set(slot.start, slot);
+        else picked.delete(slot.start);
+        drawDay();
+      };
+      label.append(input, " " + slot.label);
+      line.append(label);
+      slotList.append(line);
+    }
+    if (!slotList.children.length) slotList.textContent = "No available times on this date.";
+    drawSelection();
+  }
+
+  async function loadMonth(month = "") {
+    const request = ++requestNumber;
+    status.textContent = "Loading availability?";
+    try {
+      const url = month ? endpoint + "?month=" + encodeURIComponent(month) : endpoint;
+      const response = await fetch(url, {cache: "no-store"});
+      const result = await response.json();
+      if (request !== requestNumber) return;
+      if (!response.ok) throw Error(result.detail);
+      view = result;
+      document.getElementById("schedule-contact").textContent =
+        [view.company, view.contact || "No named contact"].join(" ? ");
+      document.getElementById("schedule-timezone").textContent = "Time zone: " + view.timezone;
+      const [year, monthNumber] = view.month.split("-").map(Number);
+      monthInput.value = monthNumber - 1;
+      yearInput.value = year;
+      const available = new Set(view.slots.map(slot => slot.day));
+      activeDay = view.slots[0]?.day || view.month + "-01";
+      days.replaceChildren();
+      for (let index = 0; index < new Date(year, monthNumber - 1, 1).getDay(); index++) {
+        days.append(document.createElement("span"));
+      }
+      for (let date = 1; date <= new Date(year, monthNumber, 0).getDate(); date++) {
+        const key = view.month + "-" + String(date).padStart(2, "0");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = date;
+        button.setAttribute("aria-pressed", String(key === activeDay));
+        button.setAttribute("aria-label", key + (available.has(key) ? ", available" : ", no availability"));
+        if (available.has(key)) button.classList.add("meeting-day-booked");
+        button.onclick = () => {
+          activeDay = key;
+          days.querySelector('[aria-pressed="true"]')?.setAttribute("aria-pressed", "false");
+          button.setAttribute("aria-pressed", "true");
+          drawDay();
+        };
+        days.append(button);
+      }
+      offerForm.hidden = false;
+      bookForm.hidden = !view.confirmation;
+      bookForm.querySelector("button").disabled = !view.booking_enabled;
+      if (view.confirmation) {
+        document.getElementById("schedule-confirmation-message").textContent = view.confirmation.message;
+        document.getElementById("schedule-confirmed-time").textContent = view.confirmation.label;
+      }
+      drawDay();
+      status.textContent = !view.booking_enabled ? "Booking is disabled. You can still prepare an offer." : "";
+    } catch (error) {
+      if (request === requestNumber) status.textContent = error.message || "Could not load scheduling.";
+    }
+  }
+
+  function changeMonth(year, month) {
+    const date = new Date(year, month, 1);
+    if (date.getFullYear() < 2000 || date.getFullYear() > 2099) return;
+    monthInput.value = date.getMonth();
+    yearInput.value = date.getFullYear();
+    loadMonth(date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0"));
+  }
+  document.getElementById("schedule-prev").onclick = () => changeMonth(+yearInput.value, +monthInput.value - 1);
+  document.getElementById("schedule-next").onclick = () => changeMonth(+yearInput.value, +monthInput.value + 1);
+  monthInput.onchange = yearInput.onchange = () => {
+    if (yearInput.value && yearInput.checkValidity()) changeMonth(+yearInput.value, +monthInput.value);
+  };
+  scheduleButton.addEventListener("click", () => {
+    view = null;
+    picked.clear();
+    offerForm.hidden = bookForm.hidden = true;
+    bookForm.reset();
+    dialog.showModal();
+    loadMonth();
+  });
+  for (const [action, form] of [["offer", offerForm], ["book", bookForm]]) {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = form.querySelector("button");
+      if (!view || button.disabled) return;
+      const data = new FormData(form);
+      data.set("incoming_id", view.incoming_id);
+      if (action === "offer") for (const start of picked.keys()) data.append("starts", start);
+      if (action === "book") {
+        data.set("offer_id", view.confirmation.offer_id);
+        data.set("confirmed_start", view.confirmation.start);
+      }
+      button.disabled = true;
+      status.textContent = action === "book" ? "Checking and booking?" : "Checking and saving offer?";
+      try {
+        const response = await fetch(endpoint + "/" + action, {method: "POST", body: data});
+        if (!response.ok) throw Error((await response.json()).detail);
+        location.replace("/dashboard/conversations?thread_id={{ selected_conversation.id }}");
+      } catch (error) {
+        status.textContent = error.message || "Could not complete scheduling.";
+        button.disabled = false;
+      }
+    });
+  }
+}
+const conversationTime = new Intl.DateTimeFormat(undefined, {dateStyle: "medium", timeStyle: "short"});
+function localizeConversationTimes() {
+  document.querySelectorAll("[data-local-time]").forEach((time) => {
+    const date = new Date(time.dateTime);
+    if (!Number.isNaN(date.getTime())) time.textContent = conversationTime.format(date);
+  });
+}
+localizeConversationTimes();
+</script>
+{% endif %}

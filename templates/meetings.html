@@ -1,0 +1,139 @@
+<section class="card settings-card">
+  <div class="conversation-toolbar">
+    <div><h1>Meetings</h1><p>Manage prospect calls and bookings.</p></div>
+    <button type="button" id="view-calendar"><span aria-hidden="true">&#128197;</span> View Calendar</button>
+  </div>
+  <div class="meeting-summary">
+    {% for status, label in [("Upcoming","Upcoming"),("Pending","Pending Confirmation"),("Completed","Completed")] %}
+    <div class="card"><strong>{{ meeting_counts[status] }}</strong><span>{{ label }}</span></div>
+    {% endfor %}
+  </div>
+  <div class="conversation-toolbar">
+    <h2>All Meetings</h2>
+    <label>Status <select id="meeting-filter">
+      {% for status in ["All","Upcoming","Pending","Completed","Cancelled"] %}<option>{{ status }}</option>{% endfor %}
+    </select></label>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Company</th><th>Contact name</th><th>Phone number</th><th>Date &amp; Time</th><th>Status</th><th>View</th></tr></thead>
+    <tbody>
+    {% for meeting in meetings %}
+    <tr data-meeting-status="{{ meeting.status }}">
+      <td>{{ meeting.company }}</td><td>{{ meeting.contact or "Unknown" }}</td><td>{{ meeting.phone or "Not provided" }}</td>
+      <td>{{ meeting.time }}</td><td>{{ "Pending confirmation" if meeting.status == "Pending" else meeting.status }}</td>
+      <td><button type="button" data-meeting-detail="{{ meeting.key }}">View</button></td>
+    </tr>
+    {% endfor %}
+    <tr id="no-meetings" {% if meetings %}hidden{% endif %}><td colspan="6">No meetings for this status.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+{% for meeting in meetings %}
+<dialog class="card draft-review email-review" id="{{ meeting.key }}" aria-labelledby="{{ meeting.key }}-title">
+  <header><h2 id="{{ meeting.key }}-title">Meeting details</h2><form method="dialog"><button>Close</button></form></header>
+  <dl>
+    <dt>Company</dt><dd>{{ meeting.company }}</dd>
+    <dt>Contact name</dt><dd>{{ meeting.contact or "Unknown" }}</dd>
+    <dt>Contact email</dt><dd>{{ meeting.email or "Unknown" }}</dd>
+    <dt>Phone number</dt><dd>{{ meeting.phone or "Not provided" }}</dd>
+    <dt>Date and time</dt><dd>{{ meeting.time }}</dd>
+    <dt>Time zone</dt><dd>{{ meeting.zone }}</dd>
+    <dt>Status</dt><dd>{{ "Pending confirmation" if meeting.status == "Pending" else meeting.status }}</dd>
+    {% if meeting.link %}<dt>Meeting link</dt><dd><a href="{{ meeting.link }}" target="_blank" rel="noopener">Open meeting link</a></dd>{% endif %}
+    <dt>Related conversation</dt><dd><a href="/dashboard/conversations?thread_id={{ meeting.thread }}">{{ meeting.company }} conversation</a></dd>
+  </dl>
+</dialog>
+{% endfor %}
+
+<dialog class="card draft-review email-review" id="meetings-calendar" aria-labelledby="calendar-title">
+  <header><h2 id="calendar-title">Meeting calendar</h2><form method="dialog"><button>Close</button></form></header>
+  <div class="meeting-calendar-controls">
+    <button type="button" id="calendar-prev" aria-label="Previous month">&#8249;</button>
+    <label>Month <select id="calendar-month"></select></label>
+    <label>Year <input type="number" id="calendar-year" min="1900" max="2200" required></label>
+    <button type="button" id="calendar-next" aria-label="Next month">&#8250;</button>
+  </div>
+  <div class="meeting-calendar-grid" aria-label="Days of the month">
+    {% for day in ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"] %}<strong>{{ day }}</strong>{% endfor %}
+    <div id="calendar-days"></div>
+  </div>
+  <h3 id="calendar-day-title"></h3>
+  <div id="calendar-slots" aria-live="polite"></div>
+</dialog>
+
+<script type="application/json" id="calendar-bookings">{{ meetings|selectattr("day","defined")|rejectattr("status","equalto","Cancelled")|list|tojson }}</script>
+<script>
+(() => {
+  const calendar = document.getElementById("meetings-calendar");
+  const bookings = JSON.parse(document.getElementById("calendar-bookings").textContent);
+  const monthSelect = document.getElementById("calendar-month");
+  const yearInput = document.getElementById("calendar-year");
+  const days = document.getElementById("calendar-days");
+  const slots = document.getElementById("calendar-slots");
+  const today = new Date();
+  let day = today.getDate();
+  let month = today.getMonth();
+  let year = today.getFullYear();
+  const monthName = new Intl.DateTimeFormat(undefined, {month: "long"});
+
+  for (let index = 0; index < 12; index++) {
+    monthSelect.add(new Option(monthName.format(new Date(2020, index, 1)), index));
+  }
+  function key(date) {
+    return [year, month + 1, date].map(value => String(value).padStart(2, "0")).join("-");
+  }
+  function draw() {
+    monthSelect.value = month;
+    yearInput.value = year;
+    days.replaceChildren();
+    const size = new Date(year, month + 1, 0).getDate();
+    for (let index = 0; index < new Date(year, month, 1).getDay(); index++) {
+      days.append(document.createElement("span"));
+    }
+    for (let date = 1; date <= size; date++) {
+      const button = document.createElement("button");
+      button.textContent = date;
+      button.setAttribute("aria-pressed", date === day);
+      if (bookings.some(booking => booking.day === key(date))) button.classList.add("meeting-day-booked");
+      button.addEventListener("click", () => { day = date; draw(); days.querySelector('[aria-pressed="true"]').focus(); });
+      days.append(button);
+    }
+    document.getElementById("calendar-day-title").textContent =
+      new Date(year, month, day).toLocaleDateString(undefined, {dateStyle: "long"});
+    slots.replaceChildren();
+    for (const booking of bookings.filter(booking => booking.day === key(day))) {
+      const button = document.createElement("button");
+      button.textContent = booking.clock + " ? " + booking.company;
+      button.dataset.meetingDetail = booking.key;
+      slots.append(button);
+    }
+    if (!slots.children.length) slots.textContent = "No meetings on this date.";
+  }
+  function changeMonth(nextYear, nextMonth) {
+    const next = new Date(nextYear, nextMonth, 1);
+    if (next.getFullYear() < 1900 || next.getFullYear() > 2200) return;
+    year = next.getFullYear();
+    month = next.getMonth();
+    day = 1;
+    draw();
+  }
+  document.getElementById("view-calendar").onclick = () => { draw(); calendar.showModal(); };
+  document.getElementById("calendar-prev").onclick = () => changeMonth(year, month - 1);
+  document.getElementById("calendar-next").onclick = () => changeMonth(year, month + 1);
+  monthSelect.onchange = () => changeMonth(year, Number(monthSelect.value));
+  yearInput.onchange = () => { if (yearInput.checkValidity()) changeMonth(Number(yearInput.value), month); };
+  document.addEventListener("click", event => {
+    const button = event.target.closest("[data-meeting-detail]");
+    if (button) document.getElementById(button.dataset.meetingDetail).showModal();
+  });
+  document.getElementById("meeting-filter").onchange = event => {
+    let visible = 0;
+    document.querySelectorAll("[data-meeting-status]").forEach(row => {
+      row.hidden = event.target.value !== "All" && row.dataset.meetingStatus !== event.target.value;
+      if (!row.hidden) visible++;
+    });
+    document.getElementById("no-meetings").hidden = Boolean(visible);
+  };
+})();
+</script>

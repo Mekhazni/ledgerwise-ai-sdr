@@ -1,0 +1,268 @@
+<div class="drafts">
+  {% macro contact_form(company) %}
+    {% set candidates = company.company_contacts|selectattr("selectable")|list %}
+    {% if candidates %}
+      <form class="draft-actions" method="post" action="/drafts/companies/{{ company.id }}/contacts">
+        {% for field, label, saved in [('primary_id', 'Primary', company.primary_contact_id), ('backup_id', 'Backup', company.backup_contact_id)] %}
+        <label>{{ label }}
+          <select name="{{ field }}">
+            <option value="">None</option>
+            {% for contact in candidates %}
+            <option value="{{ contact.id }}" {% if contact.id == saved %}selected{% endif %}>{{ contact.name or contact.email }}{% if contact.role %} ({{ contact.role }}){% endif %} &middot; {{ contact.email }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        {% endfor %}
+        <button type="submit">Save validated contacts</button>
+      </form>
+    {% else %}
+      <p>No suitable contacts are available to validate.</p>
+    {% endif %}
+  {% endmacro %}
+  {% macro contact_status(contact) %}
+    {{ {"verified": "Delivery verified", "undeliverable": "Undeliverable"}.get(contact.delivery_status, "Delivery unverified") }}
+    {% if contact.provider_status %}<br>Provider: {{ contact.provider_status|replace("_", " ")|capitalize }}{% endif %}
+    {% if contact.provider_confidence is not none %} ({{ contact.provider_confidence }}%){% endif %}
+  {% endmacro %}
+  {% if contact_error %}<p class="error" role="alert">{{ contact_error }}</p>{% endif %}
+  <section class="card settings-card">
+    <h2>Companies without usable contact candidates</h2>
+    <p>{{ lookup_available }} of {{ lookup_limit }} lookup reservations left.</p>
+    {% if lookup_results %}
+    {% set outcomes = {"existing": "Already searched; skipped", "limit": "No lookup credits remaining",
+      "fit_required": "No longer eligible", "not_found": "Company missing", "forbidden": "Access denied; batch stopped",
+      "reservation_error": "Reservation failed; batch stopped", "finish_error": "Result could not be saved; batch stopped"} %}
+    <ul role="status" aria-label="Lookup results">
+      {% for outcome, count in lookup_results.items() %}
+      <li>{{ count }} &middot; {{ outcomes.get(outcome, lookup_labels.get(outcome, outcome)) }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th scope="col"><input id="select-all-companies" type="checkbox" aria-label="Select all available companies"></th>
+          <th scope="col">Company</th><th scope="col">Qualification type</th>
+          <th scope="col">Contact lookup status</th><th scope="col">Actions</th>
+        </tr></thead>
+        <tbody>
+        {% for company in eligible_companies if not company.usable_contacts %}
+          {% set lookup = lookups.get(company.website) %}
+          <tr>
+            <td><input type="checkbox" name="company_ids" form="bulk-contact-lookup" value="{{ company.id }}"
+              aria-label="Select {{ company.name }}" {% if lookup or not lookup_available %}disabled{% endif %}></td>
+            <th scope="row">{{ company.name }}</th>
+            <td>{{ review_labels[company.human_status] }}</td>
+            <td>{% if lookup and lookup.status == "completed" %}
+              {{ "Contacts ready for review" if company.company_contacts|selectattr("selectable")|list else "No suitable contacts" }}
+            {% else %}{{ lookup_labels.get(lookup.status, lookup.status) if lookup else "Awaiting lookup" }}{% endif %}</td>
+            <td><a href="/dashboard/companies?company_id={{ company.id }}">View company</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5">No eligible companies without usable contact candidates.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <form id="bulk-contact-lookup" class="draft-actions" method="post" action="/drafts/companies/lookup">
+      <button type="submit" disabled>Find contacts for selected companies</button>
+      <output id="company-selection-count" aria-live="polite">0 selected</output>
+    </form>
+  </section>
+
+  <section class="card settings-card">
+    <h2>Companies with discovered contacts</h2>
+    <div class="table-wrap">
+      <table class="contacts-summary">
+        <thead><tr><th scope="col">Company</th><th scope="col">Candidates</th>
+          <th scope="col">Validation status</th><th scope="col">Primary contact</th>
+          <th scope="col">Backup contact</th><th scope="col">Actions</th></tr></thead>
+        <tbody>
+        {% for company in eligible_companies if company.usable_contacts %}
+          <tr>
+            <th scope="row">{{ company.name }}{% if company.human_status == "demo_fit" %}<br><small>Test only</small>{% endif %}</th>
+            <td>{{ company.company_contacts|length }}</td>
+            <td>{{ "Primary validated" if company.primary_contact else "Awaiting validation" }}
+            </td>
+            {% for contact in [company.primary_contact, company.backup_contact] %}
+            <td class="contact-details">
+              {% if contact %}
+              <strong>{{ contact.name or "Name unavailable" }}</strong>{% if contact.role %}<br>{{ contact.role }}{% endif %}<br>
+              <a href="/dashboard/companies?company_id={{ company.id }}#published-contact-{{ contact.id }}">{{ contact.email }}</a><br>
+              {{ contact_status(contact) }}
+              {% else %}Not selected{% endif %}
+            </td>
+            {% endfor %}
+            <td><div class="contact-actions">
+              <button type="button" data-review-dialog="review-contacts-{{ company.id }}">Review contacts</button>
+            </div></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6">No usable contact candidates for eligible companies.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% for company in eligible_companies if company.usable_contacts %}
+  <dialog class="card draft-review contact-review" id="review-contacts-{{ company.id }}" aria-labelledby="review-contacts-title-{{ company.id }}">
+    <header>
+      <h2 id="review-contacts-title-{{ company.id }}">Review contacts for {{ company.name }}</h2>
+      <form method="dialog"><button type="submit">Close</button></form>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Role</th><th>Business email</th><th>Verification and confidence</th></tr></thead>
+        <tbody>
+        {% for contact in company.company_contacts %}
+          <tr><td>{{ contact.name or "Not captured" }}</td>
+            <td>{{ contact.role or contact_type_labels.get(contact.contact_type, "Not captured") }}</td>
+            <td><a href="/dashboard/companies?company_id={{ company.id }}#published-contact-{{ contact.id }}">{{ contact.email }}</a></td>
+            <td>{{ contact_status(contact) }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if company.draft_progress == "not_started" and not company.has_current_draft %}
+    <p>Contact assignments are already saved. Save them as shown to start the first email draft.</p>
+    {% endif %}
+    {{ contact_form(company) }}
+  </dialog>
+  {% endfor %}
+
+  <section class="card settings-card">
+    <h2>AI Email Drafts</h2>
+    <div class="draft-actions">
+      <label for="draft-status-filter">Draft status</label>
+      <select id="draft-status-filter">
+        <option value="">All statuses</option>
+        {% for status in draft_statuses %}<option>{{ status }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Company</th><th scope="col">Primary contact</th><th scope="col">Subject</th>
+          <th scope="col">Draft status</th><th scope="col">Actions</th></tr></thead>
+        <tbody id="email-draft-rows">
+        {% for company in generation_rows %}
+          {% set generating = company.draft_progress == "generating" %}
+          <tr data-draft-status="{{ 'Generating' if generating else 'Generation failed' }}">
+            <th scope="row">{{ company.name }}{% if company.human_status == "demo_fit" %}<br><small>Test only</small>{% endif %}</th>
+            <td>{{ company.primary_contact.name or company.primary_contact.email }}</td>
+            <td>&mdash;</td>
+            <td>{% if generating %}<span role="status">Generating<span class="working-dots" aria-hidden="true">...</span></span>
+                {% else %}<strong>Generation failed</strong><br>{{ company.draft_error or "The first draft could not be generated." }}{% endif %}</td>
+            <td>{% if not generating %}
+              <form data-draft-generation method="post" action="/drafts/companies/{{ company.id }}/retry">
+                <button type="submit">Retry draft</button>
+                <p data-generation-error role="alert" hidden></p>
+              </form>
+            {% endif %}</td>
+          </tr>
+        {% endfor %}
+        {% for draft in draft_rows %}
+          {% set message = draft.message %}
+          {% set contact = message.initial_outreach %}
+          <tr data-draft-status="{{ draft.status }}">
+            <th scope="row">{{ draft.company.name }}{% if draft.test_only %}<br><small>Test only</small>{% endif %}</th>
+            <td>{{ contact.name or contact.business_email }}{% if contact.role %}<br>{{ contact.role }}{% endif %}<br>{{ contact.business_email }}</td>
+            <td>{{ message.subject }}</td><td>{% if message.status == "draft" %}<span aria-label="Needs approval">&#9679;</span> {% endif %}{{ draft.status }}{% if contact.personalization == "limited" or not contact.personalization %}<br><small>Limited personalization</small>{% endif %}</td>
+            <td><button type="button" data-review-dialog="review-email-{{ message.thread_id }}">Review email</button></td>
+          </tr>
+        {% endfor %}
+          <tr id="draft-filter-empty" {% if draft_rows or generation_rows %}hidden{% endif %}>
+            <td colspan="5">{{ "No emails match this status." if draft_rows else "No saved email drafts yet." }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <div id="email-draft-dialogs">
+  {% for draft_thread in draft_rows %}
+    {% set thread_id = draft_thread.message.thread_id %}
+    {% set versions = draft_thread.versions %}
+    <dialog class="card draft-review email-review" id="review-email-{{ thread_id }}" aria-labelledby="review-title-{{ thread_id }}">
+      <header>
+        <h2 id="review-title-{{ thread_id }}">Review email</h2>
+        <form method="dialog"><button type="submit">Close</button></form>
+      </header>
+      <nav class="draft-actions draft-version-navigation" aria-label="Email versions">
+        <button type="button" data-version-step="-1" {% if versions|length < 2 %}disabled{% endif %}>Previous version</button>
+        <button type="button" data-version-step="1" disabled>Next version</button>
+      </nav>
+      {% for draft in versions %}
+      {% set message = draft.message %}
+      {% set contact = message.initial_outreach %}
+      {% set latest = loop.last %}
+      <article data-draft-version="{{ message.version }}" {% if not latest %}hidden{% endif %}>
+      <p><strong>{{ draft.company.name }}</strong>{% if draft.test_only %} &middot; Test only{% endif %}<br>
+        Primary contact: {{ contact.name or contact.business_email }}{% if contact.role %} &middot; {{ contact.role }}{% endif %}<br>{{ contact.business_email }}<br>{{ draft.status }} &middot; Version {{ message.version }} of {{ draft_thread.message.version }}</p>
+      {% if not latest %}<p><strong>Older version &middot; Read only</strong></p>{% endif %}
+      {% if contact.model %}<p>Drafted by AI ({{ contact.model }})</p>{% endif %}
+      {% if contact.requested_by %}<p>Requested by {{ contact.requested_by_name or contact.requested_by }}</p>{% endif %}
+      {% if contact.edited_by %}<p>Edited by {{ contact.edited_by_name or contact.edited_by }}</p>{% endif %}
+      <p>Delivery to test inbox: {{ message.actual_recipient or test_recipient or "TEST_EMAIL is not configured" }}</p>
+      {% if contact.edited_at %}<p>Edited at {{ contact.edited_at }}</p>{% endif %}
+      {% if message.review_events %}
+      <ul aria-label="Review history">
+        {% for event in message.review_events %}
+        <li>{{ event.action|capitalize }}{% if event.name %} by {{ event.name }}{% endif %} &middot; {{ event.at }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if message.send_error %}<p class="error" role="alert">{{ message.send_error }}</p>{% endif %}
+      {% if message.send_state == "sending" %}<p role="status">Sending. If this does not resolve, check Gmail Sent before taking any further action.</p>{% endif %}
+      <h3>{{ message.subject }}</h3>
+      <pre>{{ message.body }}</pre>
+      <p>{{ contact.explanation }}</p>
+      <h3>Supporting research</h3>
+      <ul>
+      {% for fact in message.facts_used %}
+        <li>{{ fact.quote }} {% if fact.safe_url %}<a href="{{ fact.safe_url }}">Source</a>{% endif %}</li>
+      {% else %}
+        <li>No supporting research is attached to this message.</li>
+      {% endfor %}
+      </ul>
+      {% if latest and message.status in ["draft", "rejected"] and draft.company.human_status in ["confirmed_fit", "demo_fit"]
+            and draft.company.primary_contact_id == contact.contact_id %}
+      <form class="draft-regeneration" data-draft-generation method="post" action="/drafts/companies/{{ draft.company.id }}/refresh-personalization">
+        <input type="hidden" name="message_id" value="{{ message.id }}">
+        {% if draft.company.draft_progress == "generating" %}
+        <p role="status" data-generation-progress>Regenerating<span class="working-dots" aria-hidden="true">...</span></p>
+        {% else %}
+        <p role="status" data-generation-progress hidden>Regenerating<span class="working-dots" aria-hidden="true">...</span></p>
+        {% endif %}
+        <p class="error" role="alert" data-generation-error {% if draft.company.draft_progress != "failed" %}hidden{% endif %}>
+          {% if draft.company.draft_progress == "failed" %}{{ draft.company.draft_error or "The previous attempt failed. Your draft is still saved." }}{% endif %}
+        </p>
+        <button type="submit" {% if draft.company.draft_progress == "generating" %}disabled{% endif %}>
+          {{ "Retry personalization" if draft.company.draft_progress == "failed" else "Regenerate with AI" }}
+        </button>
+      </form>
+      {% endif %}
+      {% if latest and message.status == "draft" %}
+      <form class="draft-regeneration" method="post" data-email-review data-email-edit hidden action="/drafts/messages/{{ message.id }}/edit">
+        <input type="hidden" name="version" value="{{ message.version }}">
+        <label>Subject <input name="subject" value="{{ message.subject }}" maxlength="120" required></label>
+        <label>Email body <textarea name="body" maxlength="1600" required>{{ message.body }}</textarea></label>
+        <button type="submit">Save edits</button>
+      </form>
+      <p role="status" data-review-progress hidden></p>
+      <p class="error" role="alert" data-review-error hidden></p>
+      <footer class="draft-actions draft-review-actions">
+        {% for action, label in [("approve", "Approve and send"), ("reject", "Reject")] %}
+        <form method="post" data-email-review action="/drafts/messages/{{ message.id }}/{{ action }}">
+          <input type="hidden" name="version" value="{{ message.version }}">
+          <button type="submit">{{ label }}</button>
+        </form>
+        {% endfor %}
+        <button type="button" data-edit-draft>Edit</button>
+      </footer>
+      {% endif %}
+      </article>
+      {% endfor %}
+    </dialog>
+  {% endfor %}
+  </div>
+</div>
+<script src="/static/email_drafts.js?v={{ email_drafts_js_version }}" defer></script>
